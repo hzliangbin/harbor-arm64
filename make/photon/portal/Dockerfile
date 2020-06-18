@@ -23,7 +23,7 @@ RUN ls -la \
     && npm run release
 
 
-FROM photon:2.0
+FROM photon:3.0
 
 COPY --from=nodeportal /build_dir/dist /usr/share/nginx/html
 COPY --from=nodeportal /build_dir/swagger.yaml /usr/share/nginx/html
