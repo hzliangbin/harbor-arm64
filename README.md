@@ -1,5 +1,5 @@
 ## harbor-arm64
-This repo is forked form goharbor/harbor. And it's based on v1.9.3 to Modified to run on arm64.
+This repo is forked form goharbor/harbor. It's based on v1.9.3 to modify.Run and tested on arm64.
 
 ## what's changed
 * base image changed to Photon 3.0 to support arm64.
