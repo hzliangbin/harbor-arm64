@@ -7,4 +7,5 @@ This repo is forked form goharbor/harbor. It's based on v1.9.3 to modify.Run and
 * The ENV REGISTRY_SRC_TAG=$(REGISTRY_SRC_TAG) added to Makefile build flag
 * change ../binary/registry/ to ../binary/bin/registry in make/photon/Makefile
 * change ../binary/registry/ to ../binary/bin/registry in make/photon/registry/Dockerfile
+* change ../binary/registry/ to ../binary/bin/registry in make/photon/registryctl/Dockerfile
 * replace dump_init with arm64 one
