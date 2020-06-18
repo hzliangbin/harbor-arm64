@@ -1,0 +1,35 @@
+.header-title {
+    margin-top: 0;
+}
+
+.option-left {
+    padding-left: 16px;
+}
+
+.option-right {
+    padding-right: 16px;
+    .select-option {
+        float: left;
+        left: -6px;
+        top: 8px;
+    }
+}
+
+.refresh-btn {
+    cursor: pointer;
+}
+
+.refresh-btn:hover {
+    color: #007CBB;
+}
+.rightPos {
+    position: absolute; right: 20px; margin-top: 5px; height:32px; z-index: 100;
+}
+
+.projectPos {
+    padding-left: 15px;
+    padding-right: 15px;
+}
+.position-r{
+    position: relative;
+}

@@ -1,0 +1,34 @@
+clr-modal {
+    ::ng-deep div.modal-dialog {
+        width: unset;
+    }
+    .rename-tool {
+        .btn {
+            margin-right: 6px;
+            padding-left: 3px;
+            padding-right: 3px;
+        }
+    position: relative;
+    bottom: 9px;
+    }
+    .label-inner-text{
+        margin: 0;
+    }
+    .cli-secret {
+        align-items: center;
+        .reset-cli {
+            height: 30px;
+        }
+        .btn-padding-less {
+            padding-left: 5px;
+            padding-right: 5px;
+        }
+    }
+    .hidden-generate-cli {
+        font-size: 30px;
+        color: grey;
+        margin-left: 0.5rem;
+        cursor: pointer;
+        line-height: 30px;
+    }
+}
