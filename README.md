@@ -8,4 +8,5 @@ This repo is forked form goharbor/harbor. It's based on v1.9.3 to modify.Run and
 * change ../binary/registry/ to ../binary/bin/registry in make/photon/Makefile
 * change ../binary/registry/ to ../binary/bin/registry in make/photon/registry/Dockerfile
 * change ../binary/registry/ to ../binary/bin/registry in make/photon/registryctl/Dockerfile
-* replace dump_init with arm64 one
+* change v0.4.1/dep-linux-amd64 to v0.5.4/dep-linux-arm64 in make/photon/notary/binary.Dockerfile
+* replace dumb_init with arm64 one
