@@ -2,6 +2,8 @@
 
 This repo is forked form goharbor/harbor. It's based on v1.9.3 to modify.Run and tested on arm64.
 
+Tested on Huawei Thaishan V2280H Centos 7.6.
+
 ## What's Changed
 
 * base image changed to Photon 3.0 to support arm64.
