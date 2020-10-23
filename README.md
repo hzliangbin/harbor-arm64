@@ -32,7 +32,7 @@ Clone this repo and run the command to build your own package:
 
 `make package_offline -e  VERSIONTAG=v1.9.3 PKGVERSIONTAG=v1.9.3 UIVERSIONTAG=v1.9.3  DEVFLAG=false  CLAIRFLAG=true`
 
-or download the release package here.
+or download the release package [here](https://github.com/hzliangbin/harbor-arm64/releases/tag/v1.9.3).
 
 Detailed intall instructions are [here](https://github.com/hzliangbin/harbor-arm64/blob/master/docs/installation_guide.md). 
 
