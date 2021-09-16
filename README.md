@@ -35,5 +35,21 @@ Clone this repo and run the command to build your own package:
 or download the release package [here](https://github.com/hzliangbin/harbor-arm64/releases/tag/v1.9.3).
 
 Detailed intall instructions are [here](https://github.com/hzliangbin/harbor-arm64/blob/master/docs/installation_guide.md). 
+## FAQ
+1、sudo: Account or password is expired, reset your password and try again
 
+A:因为当前版本是1.9.3，这是harbor的一个[BUG](https://github.com/goharbor/harbor/issues/11633),解决参考文档：https://xie.infoq.cn/article/07b3a4de1062852e23395b19e
+
+2、no logs are available with the 'syslog' log driver
+
+修改yaml中registry、registryctl的日志驱动格式为json-file
+
+3、registry       | sudo: unable to change expired password: Authentication token manipulation error
+
+A:问题跟第一个类似，直接添加以下内容即可
+```
+      - type: bind
+        source: /opt/harbor-log-etc/shadow
+        target: /etc/shadow
+```
 
