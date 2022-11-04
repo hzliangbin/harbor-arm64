@@ -29,6 +29,8 @@ import {
   ConfirmationTargets,
   ConfirmationButtons
 } from "../../shared/shared.const";
+import { randomWord } from '../../shared/shared.utils';
+import { ResetSecret } from './account';
 @Component({
   selector: "account-settings-modal",
   templateUrl: "account-settings-modal.component.html",
@@ -49,15 +51,17 @@ export class AccountSettingsModalComponent implements OnInit, AfterViewChecked {
   originAdminName = "admin";
   newAdminName = "admin@harbor.local";
   renameConfirmation = false;
-//   confirmRename = false;
+  showSecretDetail = false;
+  resetForms = new ResetSecret();
   showGenerateCli: boolean = false;
-  @ViewChild("confirmationDialog")
+  @ViewChild("confirmationDialog", {static: false})
   confirmationDialogComponent: ConfirmationDialogComponent;
 
   accountFormRef: NgForm;
-  @ViewChild("accountSettingsFrom") accountForm: NgForm;
-  @ViewChild(InlineAlertComponent) inlineAlert: InlineAlertComponent;
-  @ViewChild("copyInput") copyInput: CopyInputComponent;
+  @ViewChild("accountSettingsFrom", {static: true}) accountForm: NgForm;
+  @ViewChild("resetSecretFrom", {static: true}) resetSecretFrom: NgForm;
+  @ViewChild(InlineAlertComponent, {static: false}) inlineAlert: InlineAlertComponent;
+  @ViewChild("copyInput", {static: false}) copyInput: CopyInputComponent;
 
   constructor(
     private session: SessionService,
@@ -350,13 +354,27 @@ export class AccountSettingsModalComponent implements OnInit, AfterViewChecked {
   showGenerateCliFn() {
     this.showGenerateCli = !this.showGenerateCli;
   }
-  confirmGenerate(confirmData): void {
-    let userId = confirmData.data;
-    this.accountSettingsService.generateCli(userId).subscribe(cliSecret => {
-      this.account.oidc_user_meta.secret = cliSecret.secret;
+  confirmGenerate(event): void {
+    this.account.oidc_user_meta.secret = randomWord(9);
+    this.resetCliSecret(this.account.oidc_user_meta.secret);
+  }
+
+  resetCliSecret(secret) {
+    let userId = this.account.user_id;
+    this.accountSettingsService.saveNewCli(userId, {secret: secret}).subscribe(cliSecret => {
+      this.account.oidc_user_meta.secret = secret;
+      this.closeReset();
       this.inlineAlert.showInlineSuccess({message: 'PROFILE.GENERATE_SUCCESS'});
     }, error => {
       this.inlineAlert.showInlineError({message: 'PROFILE.GENERATE_ERROR'});
     });
+  }
+  disableChangeCliSecret() {
+    return this.resetSecretFrom.invalid || (this.resetSecretFrom.value.input_secret !== this.resetSecretFrom.value.confirm_secret);
+  }
+  closeReset() {
+    this.showSecretDetail = false;
+    this.showGenerateCliFn();
+    this.resetSecretFrom.resetForm(new ResetSecret());
   }
 }

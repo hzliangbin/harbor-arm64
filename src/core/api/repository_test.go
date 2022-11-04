@@ -18,8 +18,6 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/goharbor/harbor/src/common/dao"
-	"github.com/goharbor/harbor/src/common/dao/project"
 	"github.com/goharbor/harbor/src/common/models"
 	"github.com/goharbor/harbor/src/testing/apitests/apilib"
 	"github.com/stretchr/testify/assert"
@@ -42,7 +40,7 @@ func TestGetRepos(t *testing.T) {
 	} else {
 		assert.Equal(int(200), code, "response code should be 200")
 		if repos, ok := repositories.([]repoResp); ok {
-			assert.Equal(int(1), len(repos), "the length of repositories should be 1")
+			require.Equal(t, int(1), len(repos), "the length of repositories should be 1")
 			assert.Equal(repos[0].Name, "library/hello-world", "unexpected repository name")
 		} else {
 			t.Error("unexpected response")
@@ -50,11 +48,11 @@ func TestGetRepos(t *testing.T) {
 	}
 
 	// -------------------case 2 : response code = 404------------------------//
-	fmt.Println("case 2 : response code = 404:project  not found")
+	fmt.Println("case 2 : response code = 404: project  not found")
 	projectID = "111"
 	httpStatusCode, _, err := apiTest.GetRepos(*admin, projectID, keyword)
 	if err != nil {
-		t.Error("Error whihle get repos by projectID", err.Error())
+		t.Error("Error while get repos by projectID", err.Error())
 		t.Log(err)
 	} else {
 		assert.Equal(int(404), httpStatusCode, "httpStatusCode should be 404")
@@ -79,8 +77,8 @@ func TestGetReposTags(t *testing.T) {
 	assert := assert.New(t)
 	apiTest := newHarborAPI()
 
-	// -------------------case 1 : response code = 404------------------------//
-	fmt.Println("case 1 : response code = 404,repo not found")
+	// -------------------case 1 : response code = 404---------------------//
+	fmt.Println("case 1 : response code = 404")
 	repository := "errorRepos"
 	code, _, err := apiTest.GetReposTags(*admin, repository)
 	if err != nil {
@@ -157,7 +155,7 @@ func TestGetReposManifests(t *testing.T) {
 	}
 
 	// -------------------case 3 : response code = 404------------------------//
-	fmt.Println("case 3 : response code = 404,repo not found")
+	fmt.Println("case 3 : response code = 404")
 	repoName = "111"
 	httpStatusCode, err = apiTest.GetReposManifests(*admin, repoName, tag)
 	if err != nil {
@@ -230,24 +228,6 @@ func TestPopulateAuthor(t *testing.T) {
 }
 
 func TestPutOfRepository(t *testing.T) {
-	u, err := dao.GetUser(models.User{
-		Username: projAdmin.Name,
-	})
-	if err != nil {
-		t.Errorf("Error occurred when Register user: %v", err)
-	}
-	pmid, err := project.AddProjectMember(
-		models.Member{
-			ProjectID:  1,
-			Role:       1,
-			EntityID:   int(u.UserID),
-			EntityType: "u"},
-	)
-	if err != nil {
-		t.Errorf("Error occurred when add project member: %v", err)
-	}
-	defer project.DeleteProjectMemberByID(pmid)
-
 	base := "/api/repositories/"
 	desc := struct {
 		Description string `json:"description"`
@@ -329,7 +309,7 @@ func TestPutOfRepository(t *testing.T) {
 
 	// verify that the description is changed
 	repositories := []*repoResp{}
-	err = handleAndParse(&testingRequest{
+	err := handleAndParse(&testingRequest{
 		method: http.MethodGet,
 		url:    base,
 		queryStruct: struct {

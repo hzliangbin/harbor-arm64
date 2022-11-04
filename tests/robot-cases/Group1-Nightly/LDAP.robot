@@ -44,6 +44,7 @@ Test Case - System Admin On-board New Member
     ${d}=    Get Current Date    result_format=%m%s
     Sign In Harbor  ${HARBOR_URL}  ${HARBOR_ADMIN}  ${HARBOR_PASSWORD}
     Switch To User Tag
+    Sleep  2
     Page Should Not Contain  mike02
     Navigate To Projects
     Create An New Project  project${d}
@@ -60,8 +61,10 @@ Test Case - LDAP User On-borad New Member
     Create An New Project  project${d}
     Go Into Project  project${d}  has_image=${false}
     Switch To Member
+    Sleep  2
     Page Should Not Contain  mike04
     Add Guest Member To Project  mike04
+    Sleep  2
     Page Should Contain  mike04
     Close Browser
 
@@ -109,8 +112,3 @@ Test Case - Ldap User Push An Image
 
 Test Case - Ldap User Can Not login
     Docker Login Fail  ${ip}  testerDeesExist  123456
-
-Test Case - Run LDAP Group Related API Test
-    Harbor API Test  ./tests/apitests/python/test_ldap_admin_role.py
-    Harbor API Test  ./tests/apitests/python/test_user_group.py
-    Harbor API Test  ./tests/apitests/python/test_assign_role_to_ldap_group.py

@@ -15,9 +15,11 @@ package controllers
 
 import (
 	"context"
-	"github.com/goharbor/harbor/src/core/filter"
 	"net/http"
 	"net/http/httptest"
+
+	"github.com/goharbor/harbor/src/core/filter"
+
 	// "net/url"
 	"path/filepath"
 	"runtime"
@@ -27,7 +29,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/astaxie/beego"
+	"github.com/beego/beego"
 	"github.com/goharbor/harbor/src/common"
 	"github.com/goharbor/harbor/src/common/models"
 	utilstest "github.com/goharbor/harbor/src/common/utils/test"
@@ -112,7 +114,7 @@ func TestAll(t *testing.T) {
 	r, _ := http.NewRequest("POST", "/c/login", nil)
 	w := httptest.NewRecorder()
 	beego.BeeApp.Handlers.ServeHTTP(w, r)
-	assert.Equal(http.StatusForbidden, w.Code, "'/c/login' httpStatusCode should be 403")
+	assert.Equal(http.StatusUnprocessableEntity, w.Code, "'/c/login' httpStatusCode should be 422")
 
 	r, _ = http.NewRequest("GET", "/c/log_out", nil)
 	w = httptest.NewRecorder()
@@ -123,12 +125,12 @@ func TestAll(t *testing.T) {
 	r, _ = http.NewRequest("POST", "/c/reset", nil)
 	w = httptest.NewRecorder()
 	beego.BeeApp.Handlers.ServeHTTP(w, r)
-	assert.Equal(http.StatusForbidden, w.Code, "'/c/reset' httpStatusCode should be 403")
+	assert.Equal(http.StatusUnprocessableEntity, w.Code, "'/c/reset' httpStatusCode should be 422")
 
 	r, _ = http.NewRequest("POST", "/c/userExists", nil)
 	w = httptest.NewRecorder()
 	beego.BeeApp.Handlers.ServeHTTP(w, r)
-	assert.Equal(http.StatusForbidden, w.Code, "'/c/userExists' httpStatusCode should be 403")
+	assert.Equal(http.StatusUnprocessableEntity, w.Code, "'/c/userExists' httpStatusCode should be 422")
 
 	r, _ = http.NewRequest("GET", "/c/sendEmail", nil)
 	w = httptest.NewRecorder()

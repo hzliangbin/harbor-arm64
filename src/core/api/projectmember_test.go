@@ -196,7 +196,7 @@ func TestProjectMemberAPI_Post(t *testing.T) {
 					},
 				},
 			},
-			code: http.StatusBadRequest,
+			code: http.StatusInternalServerError,
 		},
 		{
 			request: &testingRequest{
@@ -241,7 +241,7 @@ func TestProjectMemberAPI_Post(t *testing.T) {
 					},
 				},
 			},
-			code: http.StatusBadRequest,
+			code: http.StatusInternalServerError,
 		},
 	}
 	runCodeCheckingCases(t, cases...)
@@ -384,4 +384,29 @@ func TestProjectMemberAPI_PutAndDelete(t *testing.T) {
 
 	runCodeCheckingCases(t, cases...)
 
+}
+
+func Test_isValidRole(t *testing.T) {
+	type args struct {
+		role int
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		{"project admin", args{1}, true},
+		{"master", args{4}, true},
+		{"developer", args{2}, true},
+		{"guest", args{3}, true},
+		{"limited guest", args{5}, true},
+		{"unknow", args{6}, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := isValidRole(tt.args.role); got != tt.want {
+				t.Errorf("isValidRole() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }

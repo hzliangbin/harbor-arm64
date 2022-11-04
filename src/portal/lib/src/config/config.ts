@@ -100,6 +100,8 @@ export class Configuration {
     oidc_scope?: StringValueItem;
     count_per_project: NumberValueItem;
     storage_per_project: NumberValueItem;
+    cfg_expiration: NumberValueItem;
+    oidc_groups_claim: StringValueItem;
     public constructor() {
         this.auth_mode = new StringValueItem("db_auth", true);
         this.project_creation_restriction = new StringValueItem("everyone", true);
@@ -152,7 +154,19 @@ export class Configuration {
         this.oidc_client_secret = new StringValueItem('', true);
         this.oidc_verify_cert = new BoolValueItem(false, true);
         this.oidc_scope = new StringValueItem('', true);
+        this.oidc_groups_claim = new StringValueItem('', true);
         this.count_per_project = new NumberValueItem(-1, true);
         this.storage_per_project = new NumberValueItem(-1, true);
     }
+}
+
+export class ScanningMetrics {
+    total?: number;
+    completed?: number;
+    metrics: {
+        [key: string]: number;
+    };
+    requester?: string;
+    isScheduled?: boolean;
+    ongoing: boolean;
 }

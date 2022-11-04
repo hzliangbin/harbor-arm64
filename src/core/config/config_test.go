@@ -14,13 +14,10 @@
 package config
 
 import (
-	"encoding/json"
 	"os"
 	"path"
 	"runtime"
 	"testing"
-
-	"fmt"
 
 	"github.com/goharbor/harbor/src/common"
 	"github.com/goharbor/harbor/src/common/dao"
@@ -189,10 +186,6 @@ func TestConfig(t *testing.T) {
 		t.Errorf("unexpected mode: %s != %s", mode, "db_auth")
 	}
 
-	if s := ScanAllPolicy(); s.Type != "none" {
-		t.Errorf("unexpected scan all policy %v", s)
-	}
-
 	if tokenKeyPath := TokenPrivateKeyPath(); tokenKeyPath != "/etc/core/private_key.pem" {
 		t.Errorf("Unexpected token private key path: %s, expected: %s", tokenKeyPath, "/etc/core/private_key.pem")
 	}
@@ -221,31 +214,54 @@ func currPath() string {
 	}
 	return path.Dir(f)
 }
-func TestConfigureValue_GetMap(t *testing.T) {
-	var policy models.ScanAllPolicy
-	value2 := `{"parameter":{"daily_time":0},"type":"daily"}`
-	err := json.Unmarshal([]byte(value2), &policy)
-	if err != nil {
-		t.Errorf("Failed with error %v", err)
-	}
-	fmt.Printf("%+v\n", policy)
-}
 
 func TestHTTPAuthProxySetting(t *testing.T) {
+	certificate := `-----BEGIN CERTIFICATE-----
+MIIFXzCCA0egAwIBAgIUY7f2ECRISPMeb1iVNvV5iQsIErUwDQYJKoZIhvcNAQEL
+BQAwUjELMAkGA1UEBhMCQ04xDDAKBgNVBAgMA1BFSzERMA8GA1UEBwwIQmVpIEpp
+bmcxDzANBgNVBAoMBlZNd2FyZTERMA8GA1UEAwwISGFyYm9yQ0EwHhcNMTkxMTE2
+MjI1NjQ0WhcNMjAxMTE1MjI1NjQ0WjBdMQswCQYDVQQGEwJDTjEMMAoGA1UECAwD
+UEVLMREwDwYDVQQHDAhCZWkgSmluZzEPMA0GA1UECgwGVk13YXJlMRwwGgYDVQQD
+DBNqdC1kZXYuaGFyYm9yLmxvY2FsMIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIIC
+CgKCAgEAwQ/TQTHwnHwEC/KyHP8Tyv/v35GwXRGW6s1MYoqVnyQMPud0scLHAA2u
+PZv2F5jy7PtnhcR0ZHGf05L/igY1utV7/4F2aFgOq0ExYMKxvzilitdcvsxmfTLI
+m2pwS8+kH/1s1xR9/7ZPlPSdHuxcHgjtMqorljJykRyq0RBLvXCG+fmAY91kdLil
+XWiuIU73lNpZHuXEDl4m2XUzb9cuhwvaHYs7aT6BhwqAJZUjwURUqMe1PIOo7vkQ
+cKUHe3u3Fg/vbxfecEr3AHcKfIqm5fwI9vdzj5BP3lGT9hrxduAwI6SgehxGGWP4
+aN/cKGIKt/2kzgFoQi/d5p3RBkLVNP/sEyAt9dLJj12ovkQwJzdKDVOy50t3ws9g
+Mf3rUUb/wdZADK26lxolep9EXVe4kuWpOo1RvdI+lJJvWc3QaJIoVbr9LM8QN3e7
+Iyk3pYRyaQj9EKZ4k0RgWVbIZfRLy1LkGMqmCcIqunHVdGDDjbO/ri8z0sKocMGl
+qrqcBTPYmsau7PEcfzJY8k/HUDYdhZgIv2C1iLBl6eoTVDRbrGFcu8LzleWx2/19
+OA1Cx7S8WyzN+9mjygqwEYc6qMtoeutAkOA5J8JkxBp0yqjUEnAB6E7R07xQP8AY
+IKq5oVpkbD8WRI3w7l/X0AAkDtnijbgYWTfPVGihXHhRtkr/b9cCAwEAAaMiMCAw
+HgYDVR0RBBcwFYITanQtZGV2LmhhcmJvci5sb2NhbDANBgkqhkiG9w0BAQsFAAOC
+AgEAqwU10WwhI5W8w62vOpT+PKSXRVjHKhm3ltaIzAN7S772hiGl6L81cP9dXZ5y
+FN0tFUtUVK01JRJHJaduXNwx24HlwRPNp7mLa4IPpeeVfG14/QCoOd8vxHtKG+V6
+zE7Jx2FBVfUJ7P4SngEv4QfvZPt+lCXGK3V1RRTpkLD2knhBfu85rjPi+VW56Z7b
+Jb2IEmVRlfR7Z0oYm8z3Obt2XuLIC1/8NtfxthggKr6DeSwZSJXrdGVbyvdiAmk2
+iHQch0+UTkRDinL0je6WWbxBoAPXsWA9Hc69o8kmjcXUa99/i8FrC2QxPDUoxxMn
+1zWk0jct2Tsr3VZ5HnaI5e8ifG7RUcE5Vr6w7MI5P44Q88zhboP1ShYQ/s513cu2
+heELKvO3+mqv96lERtkUUwe8tm1zoPKzQI6ecGuqaTcMbXAGax+ud5XnUlz4xzTI
+cByAsQ9DNhYIcOftnfz349zkHeWmMum4uiQwfp/+OrqX+O8U0eJYhlfu9vqCU05T
+3mE8Hw5veNdLaZx+mzUVIDzrOB3fh/O62J9CsaZKtxwgLlGiT2ltuC1xUqn3DL8s
+pkgODrJUf0p5dhcnLyA2nZolRV1rtwlgJstnEV4JpG1MwtmAZYZUilLvnfpVxTtA
+y1bQusZMygQezfCuEzsewF+OpANFovCTUEs6s5vyoVNP8lk=
+-----END CERTIFICATE-----
+`
 	m := map[string]interface{}{
-		common.HTTPAuthProxySkipSearch:    "true",
-		common.HTTPAuthProxyVerifyCert:    "true",
-		common.HTTPAuthProxyCaseSensitive: "false",
-		common.HTTPAuthProxyEndpoint:      "https://auth.proxy/suffix",
+		common.HTTPAuthProxySkipSearch:        "true",
+		common.HTTPAuthProxyVerifyCert:        "true",
+		common.HTTPAuthProxyEndpoint:          "https://auth.proxy/suffix",
+		common.HTTPAuthProxyServerCertificate: certificate,
 	}
 	InitWithSettings(m)
 	v, e := HTTPAuthProxySetting()
 	assert.Nil(t, e)
 	assert.Equal(t, *v, models.HTTPAuthProxy{
-		Endpoint:      "https://auth.proxy/suffix",
-		SkipSearch:    true,
-		VerifyCert:    true,
-		CaseSensitive: false,
+		Endpoint:          "https://auth.proxy/suffix",
+		SkipSearch:        true,
+		VerifyCert:        true,
+		ServerCertificate: certificate,
 	})
 }
 
@@ -255,6 +271,7 @@ func TestOIDCSetting(t *testing.T) {
 		common.OIDCEndpoint:     "https://oidc.test",
 		common.OIDCVerifyCert:   "true",
 		common.OIDCScope:        "openid, profile",
+		common.OIDCGroupsClaim:  "my_group",
 		common.OIDCCLientID:     "client",
 		common.OIDCClientSecret: "secret",
 		common.ExtEndpoint:      "https://harbor.test",
@@ -265,6 +282,7 @@ func TestOIDCSetting(t *testing.T) {
 	assert.Equal(t, "test", v.Name)
 	assert.Equal(t, "https://oidc.test", v.Endpoint)
 	assert.True(t, v.VerifyCert)
+	assert.Equal(t, "my_group", v.GroupsClaim)
 	assert.Equal(t, "client", v.ClientID)
 	assert.Equal(t, "secret", v.ClientSecret)
 	assert.Equal(t, "https://harbor.test/c/oidc/callback", v.RedirectURL)

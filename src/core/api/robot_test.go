@@ -22,6 +22,7 @@ import (
 	"github.com/goharbor/harbor/src/common/dao"
 	"github.com/goharbor/harbor/src/common/models"
 	"github.com/goharbor/harbor/src/common/rbac"
+	"github.com/goharbor/harbor/src/pkg/robot/model"
 )
 
 var (
@@ -54,7 +55,7 @@ func TestRobotAPIPost(t *testing.T) {
 			request: &testingRequest{
 				method:     http.MethodPost,
 				url:        robotPath,
-				bodyJSON:   &models.RobotReq{},
+				bodyJSON:   &model.RobotCreate{},
 				credential: nonSysAdmin,
 			},
 			code: http.StatusForbidden,
@@ -64,7 +65,7 @@ func TestRobotAPIPost(t *testing.T) {
 			request: &testingRequest{
 				method: http.MethodPost,
 				url:    robotPath,
-				bodyJSON: &models.RobotReq{
+				bodyJSON: &model.RobotCreate{
 					Name:        "test",
 					Description: "test desc",
 					Access:      policies,
@@ -78,7 +79,7 @@ func TestRobotAPIPost(t *testing.T) {
 			request: &testingRequest{
 				method: http.MethodPost,
 				url:    robotPath,
-				bodyJSON: &models.RobotReq{
+				bodyJSON: &model.RobotCreate{
 					Name:        "testIllgel#",
 					Description: "test desc",
 				},
@@ -90,7 +91,7 @@ func TestRobotAPIPost(t *testing.T) {
 			request: &testingRequest{
 				method: http.MethodPost,
 				url:    robotPath,
-				bodyJSON: &models.RobotReq{
+				bodyJSON: &model.RobotCreate{
 					Name:        "test",
 					Description: "resource not exist",
 					Access: []*rbac.Policy{
@@ -105,7 +106,7 @@ func TestRobotAPIPost(t *testing.T) {
 			request: &testingRequest{
 				method: http.MethodPost,
 				url:    robotPath,
-				bodyJSON: &models.RobotReq{
+				bodyJSON: &model.RobotCreate{
 					Name:        "test",
 					Description: "action not exist",
 					Access: []*rbac.Policy{
@@ -120,7 +121,7 @@ func TestRobotAPIPost(t *testing.T) {
 			request: &testingRequest{
 				method: http.MethodPost,
 				url:    robotPath,
-				bodyJSON: &models.RobotReq{
+				bodyJSON: &model.RobotCreate{
 					Name:        "test",
 					Description: "policy not exit",
 					Access: []*rbac.Policy{
@@ -136,7 +137,7 @@ func TestRobotAPIPost(t *testing.T) {
 			request: &testingRequest{
 				method: http.MethodPost,
 				url:    robotPath,
-				bodyJSON: &models.RobotReq{
+				bodyJSON: &model.RobotCreate{
 					Name:        "test2",
 					Description: "test2 desc",
 				},
@@ -150,7 +151,7 @@ func TestRobotAPIPost(t *testing.T) {
 			request: &testingRequest{
 				method: http.MethodPost,
 				url:    robotPath,
-				bodyJSON: &models.RobotReq{
+				bodyJSON: &model.RobotCreate{
 					Name:        "test",
 					Description: "test desc",
 					Access:      policies,
@@ -339,7 +340,7 @@ func TestRobotAPIPut(t *testing.T) {
 			request: &testingRequest{
 				method: http.MethodPut,
 				url:    fmt.Sprintf("%s/%d", robotPath, 1),
-				bodyJSON: &models.Robot{
+				bodyJSON: &model.Robot{
 					Disabled: true,
 				},
 				credential: projAdmin4Robot,

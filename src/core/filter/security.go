@@ -24,10 +24,11 @@ import (
 
 	"strings"
 
-	beegoctx "github.com/astaxie/beego/context"
+	beegoctx "github.com/beego/beego/context"
 	"github.com/docker/distribution/reference"
 	"github.com/goharbor/harbor/src/common"
 	"github.com/goharbor/harbor/src/common/dao"
+	"github.com/goharbor/harbor/src/common/dao/group"
 	"github.com/goharbor/harbor/src/common/models"
 	secstore "github.com/goharbor/harbor/src/common/secret"
 	"github.com/goharbor/harbor/src/common/security"
@@ -36,7 +37,6 @@ import (
 	"github.com/goharbor/harbor/src/common/security/local"
 	robotCtx "github.com/goharbor/harbor/src/common/security/robot"
 	"github.com/goharbor/harbor/src/common/security/secret"
-	"github.com/goharbor/harbor/src/common/token"
 	"github.com/goharbor/harbor/src/common/utils/log"
 	"github.com/goharbor/harbor/src/core/auth"
 	"github.com/goharbor/harbor/src/core/config"
@@ -44,6 +44,9 @@ import (
 	"github.com/goharbor/harbor/src/core/promgr/pmsdriver/admiral"
 
 	"github.com/goharbor/harbor/src/pkg/authproxy"
+	"github.com/goharbor/harbor/src/pkg/robot"
+	pkg_token "github.com/goharbor/harbor/src/pkg/token"
+	robot_claim "github.com/goharbor/harbor/src/pkg/token/claims/robot"
 )
 
 // ContextValueKey for content value
@@ -188,14 +191,16 @@ func (r *robotAuthReqCtxModifier) Modify(ctx *beegoctx.Context) bool {
 	if !strings.HasPrefix(robotName, common.RobotPrefix) {
 		return false
 	}
-	rClaims := &token.RobotClaims{}
-	htk, err := token.ParseWithClaims(robotTk, rClaims)
+	rClaims := &robot_claim.Claim{}
+	opt := pkg_token.DefaultTokenOptions()
+	rtk, err := pkg_token.Parse(opt, robotTk, rClaims)
 	if err != nil {
 		log.Errorf("failed to decrypt robot token, %v", err)
 		return false
 	}
 	// Do authn for robot account, as Harbor only stores the token ID, just validate the ID and disable.
-	robot, err := dao.GetRobotByID(htk.Claims.(*token.RobotClaims).TokenID)
+	ctr := robot.RobotCtr
+	robot, err := ctr.GetRobotAccount(rtk.Claims.(*robot_claim.Claim).TokenID)
 	if err != nil {
 		log.Errorf("failed to get robot %s: %v", robotName, err)
 		return false
@@ -214,7 +219,7 @@ func (r *robotAuthReqCtxModifier) Modify(ctx *beegoctx.Context) bool {
 	}
 	log.Debug("creating robot account security context...")
 	pm := config.GlobalProjectMgr
-	securCtx := robotCtx.NewSecurityContext(robot, pm, htk.Claims.(*token.RobotClaims).Access)
+	securCtx := robotCtx.NewSecurityContext(robot, pm, rtk.Claims.(*robot_claim.Claim).Access)
 	setSecurCtxAndPM(ctx.Request, securCtx, pm)
 	return true
 }
@@ -236,18 +241,8 @@ func (oc *oidcCliReqCtxModifier) Modify(ctx *beegoctx.Context) bool {
 	if !ok {
 		return false
 	}
-
-	user, err := dao.GetUser(models.User{
-		Username: username,
-	})
+	user, err := oidc.VerifySecret(ctx.Request.Context(), username, secret)
 	if err != nil {
-		log.Errorf("Failed to get user: %v", err)
-		return false
-	}
-	if user == nil {
-		return false
-	}
-	if err := oidc.VerifySecret(ctx.Request.Context(), user.UserID, secret); err != nil {
 		log.Errorf("Failed to verify secret: %v", err)
 		return false
 	}
@@ -286,6 +281,18 @@ func (it *idTokenReqCtxModifier) Modify(ctx *beegoctx.Context) bool {
 		log.Warning("User matches token's claims is not onboarded.")
 		return false
 	}
+	settings, err := config.OIDCSetting()
+	if err != nil {
+		log.Errorf("Failed to get OIDC settings, error: %v", err)
+	}
+	if groupNames, ok := oidc.GroupsFromClaims(claims, settings.GroupsClaim); ok {
+		groups := models.UserGroupsFromName(groupNames, common.OIDCGroupType)
+		u.GroupIDs, err = group.PopulateGroup(groups)
+		if err != nil {
+			log.Errorf("Failed to get group ID list for OIDC user: %s, error: %v", u.Username, err)
+			return false
+		}
+	}
 	pm := config.GlobalProjectMgr
 	sc := local.NewSecurityContext(u, pm)
 	setSecurCtxAndPM(ctx.Request, sc, pm)
@@ -320,32 +327,42 @@ func (ap *authProxyReqCtxModifier) Modify(ctx *beegoctx.Context) bool {
 		log.Errorf("fail to get auth proxy settings, %v", err)
 		return false
 	}
-	tokenReviewResponse, err := authproxy.TokenReview(proxyPwd, httpAuthProxyConf)
+	tokenReviewStatus, err := authproxy.TokenReview(proxyPwd, httpAuthProxyConf)
 	if err != nil {
 		log.Errorf("fail to review token, %v", err)
 		return false
 	}
-
-	if !tokenReviewResponse.Status.Authenticated {
-		log.Errorf("fail to auth user: %s", rawUserName)
+	if rawUserName != tokenReviewStatus.User.Username {
+		log.Errorf("user name doesn't match with token: %s", rawUserName)
 		return false
 	}
 	user, err := dao.GetUser(models.User{
 		Username: rawUserName,
 	})
 	if err != nil {
-		log.Errorf("fail to get user: %v", err)
+		log.Errorf("fail to get user: %s, error: %v", rawUserName, err)
 		return false
 	}
-	if user == nil {
-		log.Errorf("User: %s has not been on boarded yet.", rawUserName)
+	if user == nil { // onboard user if it's not yet onboarded.
+		uid, err := auth.SearchAndOnBoardUser(rawUserName)
+		if err != nil {
+			log.Errorf("Failed to search and onboard user, username: %s, error: %v", rawUserName, err)
+			return false
+		}
+		user, err = dao.GetUser(models.User{
+			UserID: uid,
+		})
+		if err != nil {
+			log.Errorf("Fail to get user, name: %s, ID: %d, error: %v", rawUserName, uid, err)
+			return false
+		}
+	}
+	u2, err := authproxy.UserFromReviewStatus(tokenReviewStatus)
+	if err != nil {
+		log.Errorf("Failed to get user information from token review status, error: %v", err)
 		return false
 	}
-	if rawUserName != tokenReviewResponse.Status.User.Username {
-		log.Errorf("user name doesn't match with token: %s", rawUserName)
-		return false
-	}
-
+	user.GroupIDs = u2.GroupIDs
 	pm := config.GlobalProjectMgr
 	log.Debug("creating local database security context for auth proxy...")
 	securCtx := local.NewSecurityContext(user, pm)

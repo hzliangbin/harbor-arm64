@@ -33,20 +33,20 @@ Test Case - Create An New User
     Enable Self Reg
     Logout Harbor
 
-    Create An New User  url=${HARBOR_URL}  username=tester${d}  email=tester${d}@vmware.com  realname=harbortest  newPassword=Test1@34  comment=harbortest
+    Create An New User  url=${HARBOR_URL}  username=tester${d}  email=tester${d}@harbortest.com  realname=harbortest  newPassword=Test1@34  comment=harbortest
     Close Browser
 
 Test Case - Update User Comment
     Init Chrome Driver
     ${d}=    Get Current Date    result_format=%m%s
-    Create An New User  url=${HARBOR_URL}  username=tester${d}  email=tester${d}@vmware.com  realname=harbortest  newPassword=Test1@34  comment=harbortest
+    Create An New User  url=${HARBOR_URL}  username=tester${d}  email=tester${d}@harbortest.com  realname=harbortest  newPassword=Test1@34  comment=harbortest
     Update User Comment  Test12#4
     Logout Harbor
 
 Test Case - Update Password
     Init Chrome Driver
     ${d}=    Get Current Date    result_format=%m%s
-    Create An New User  url=${HARBOR_URL}  username=tester${d}  email=tester${d}@vmware.com  realname=harbortest  newPassword=Test1@34  comment=harbortest
+    Create An New User  url=${HARBOR_URL}  username=tester${d}  email=tester${d}@harbortest.com  realname=harbortest  newPassword=Test1@34  comment=harbortest
     Change Password  Test1@34  Test12#4
     Logout Harbor
     Sign In Harbor  ${HARBOR_URL}  tester${d}  Test12#4
@@ -55,11 +55,11 @@ Test Case - Update Password
 Test Case - Delete Multi User
     Init Chrome Driver
     ${d}=   Get Current Date    result_format=%m%s
-    Create An New User  ${HARBOR_URL}  deletea${d}  testa${d}@vmware.com  test${d}  Test1@34  harbor
+    Create An New User  ${HARBOR_URL}  deletea${d}  testa${d}@harbortest.com  test${d}  Test1@34  harbor
     Logout Harbor
-    Create An New User  ${HARBOR_URL}  deleteb${d}  testb${d}@vmware.com  test${d}  Test1@34  harbor
+    Create An New User  ${HARBOR_URL}  deleteb${d}  testb${d}@harbortest.com  test${d}  Test1@34  harbor
     Logout Harbor
-    Create An New User  ${HARBOR_URL}  deletec${d}  testc${d}@vmware.com  test${d}  Test1@34  harbor
+    Create An New User  ${HARBOR_URL}  deletec${d}  testc${d}@harbortest.com  test${d}  Test1@34  harbor
     Logout Harbor
     Sign In Harbor  ${HARBOR_URL}  admin  Harbor12345
     Switch To User Tag

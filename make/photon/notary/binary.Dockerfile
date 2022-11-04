@@ -1,4 +1,4 @@
-FROM golang:1.12.12
+FROM golang:1.15.6
 
 ARG NOTARY_VERSION
 ARG MIGRATE_VERSION
@@ -20,7 +20,7 @@ RUN cp -r /go/src/${NOTARYPKG}/migrations/ /
 RUN git clone -b $MIGRATE_VERSION https://github.com/golang-migrate/migrate /go/src/${MIGRATEPKG}
 WORKDIR /go/src/${MIGRATEPKG}
 
-RUN curl -fsSL -o /usr/local/bin/dep https://github.com/golang/dep/releases/download/v0.5.4/dep-linux-arm64 && chmod +x /usr/local/bin/dep
+RUN curl -fsSL -o /usr/local/bin/dep https://github.com/golang/dep/releases/download/v0.4.1/dep-linux-amd64 && chmod +x /usr/local/bin/dep
 RUN dep ensure -vendor-only
 
 ENV DATABASES="postgres mysql redshift cassandra spanner cockroachdb clickhouse"

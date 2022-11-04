@@ -32,6 +32,7 @@
 .command-input {
     font-size: 14px;
     font-weight: 500;
+    border: 0;
 }
 
 :host>>>.dropdown-menu {
@@ -40,7 +41,7 @@
 }
 
 .btn-font {
-    font-size: 14px !important;
+    font-size: 13px !important;
 }
 .hide{
     display:none;

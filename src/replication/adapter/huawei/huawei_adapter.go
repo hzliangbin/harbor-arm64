@@ -19,7 +19,7 @@ import (
 )
 
 func init() {
-	err := adp.RegisterFactory(model.RegistryTypeHuawei, AdapterFactory)
+	err := adp.RegisterFactory(model.RegistryTypeHuawei, new(factory))
 	if err != nil {
 		log.Errorf("failed to register factory for Huawei: %v", err)
 		return
@@ -27,11 +27,28 @@ func init() {
 	log.Infof("the factory of Huawei adapter was registered")
 }
 
+type factory struct {
+}
+
+// Create ...
+func (f *factory) Create(r *model.Registry) (adp.Adapter, error) {
+	return newAdapter(r)
+}
+
+// AdapterPattern ...
+func (f *factory) AdapterPattern() *model.AdapterPattern {
+	return nil
+}
+
 // Adapter is for images replications between harbor and Huawei image repository(SWR)
 type adapter struct {
 	*native.Adapter
 	registry *model.Registry
 	client   *common_http.Client
+	// original http client with no modifer,
+	// huawei's some api interface with basic authorization,
+	// some with bearer token authorization.
+	oriClient *http.Client
 }
 
 // Info gets info about Huawei SWR
@@ -210,8 +227,7 @@ func (a *adapter) HealthCheck() (model.HealthStatus, error) {
 	return model.Healthy, nil
 }
 
-// AdapterFactory is the factory for huawei adapter
-func AdapterFactory(registry *model.Registry) (adp.Adapter, error) {
+func newAdapter(registry *model.Registry) (adp.Adapter, error) {
 	dockerRegistryAdapter, err := native.NewAdapter(registry)
 	if err != nil {
 		return nil, err
@@ -231,15 +247,19 @@ func AdapterFactory(registry *model.Registry) (adp.Adapter, error) {
 		modifiers = append(modifiers, authorizer)
 	}
 
+	transport := util.GetHTTPTransport(registry.Insecure)
 	return &adapter{
 		Adapter:  dockerRegistryAdapter,
 		registry: registry,
 		client: common_http.NewClient(
 			&http.Client{
-				Transport: util.GetHTTPTransport(registry.Insecure),
+				Transport: transport,
 			},
 			modifiers...,
 		),
+		oriClient: &http.Client{
+			Transport: transport,
+		},
 	}, nil
 
 }

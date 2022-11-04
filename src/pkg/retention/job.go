@@ -23,18 +23,19 @@ import (
 
 	"github.com/goharbor/harbor/src/jobservice/job"
 	"github.com/goharbor/harbor/src/jobservice/logger"
+	"github.com/goharbor/harbor/src/pkg/art"
 	"github.com/goharbor/harbor/src/pkg/retention/dep"
 	"github.com/goharbor/harbor/src/pkg/retention/policy"
 	"github.com/goharbor/harbor/src/pkg/retention/policy/lwp"
-	"github.com/goharbor/harbor/src/pkg/retention/res"
 	"github.com/olekukonko/tablewriter"
 	"github.com/pkg/errors"
 )
 
 const (
-	actionMarkRetain   = "RETAIN"
-	actionMarkDeletion = "DEL"
-	actionMarkError    = "ERR"
+	actionMarkRetain    = "RETAIN"
+	actionMarkDeletion  = "DEL"
+	actionMarkError     = "ERR"
+	actionMarkImmutable = "IMMUTABLE"
 )
 
 // Job of running retention process
@@ -116,9 +117,9 @@ func (pj *Job) Run(ctx job.Context, params job.Parameters) error {
 	return saveRetainNum(ctx, results, allCandidates)
 }
 
-func saveRetainNum(ctx job.Context, retained []*res.Result, allCandidates []*res.Candidate) error {
+func saveRetainNum(ctx job.Context, results []*art.Result, allCandidates []*art.Candidate) error {
 	var delNum int
-	for _, r := range retained {
+	for _, r := range results {
 		if r.Error == nil {
 			delNum++
 		}
@@ -138,7 +139,7 @@ func saveRetainNum(ctx job.Context, retained []*res.Result, allCandidates []*res
 	return nil
 }
 
-func logResults(logger logger.Interface, all []*res.Candidate, results []*res.Result) {
+func logResults(logger logger.Interface, all []*art.Candidate, results []*art.Result) {
 	hash := make(map[string]error, len(results))
 	for _, r := range results {
 		if r.Target != nil {
@@ -146,9 +147,12 @@ func logResults(logger logger.Interface, all []*res.Candidate, results []*res.Re
 		}
 	}
 
-	op := func(art *res.Candidate) string {
-		if e, exists := hash[art.Hash()]; exists {
+	op := func(c *art.Candidate) string {
+		if e, exists := hash[c.Hash()]; exists {
 			if e != nil {
+				if _, ok := e.(*art.ImmutableError); ok {
+					return actionMarkImmutable
+				}
 				return actionMarkError
 			}
 
@@ -194,7 +198,7 @@ func logResults(logger logger.Interface, all []*res.Candidate, results []*res.Re
 	}
 }
 
-func arn(art *res.Candidate) string {
+func arn(art *art.Candidate) string {
 	return fmt.Sprintf("%s/%s:%s", art.Namespace, art.Repository, art.Tag)
 }
 
@@ -237,7 +241,7 @@ func getParamDryRun(params job.Parameters) (bool, error) {
 	return dryRun, nil
 }
 
-func getParamRepo(params job.Parameters) (*res.Repository, error) {
+func getParamRepo(params job.Parameters) (*art.Repository, error) {
 	v, ok := params[ParamRepo]
 	if !ok {
 		return nil, errors.Errorf("missing parameter: %s", ParamRepo)
@@ -248,7 +252,7 @@ func getParamRepo(params job.Parameters) (*res.Repository, error) {
 		return nil, errors.Errorf("invalid parameter: %s", ParamRepo)
 	}
 
-	repo := &res.Repository{}
+	repo := &art.Repository{}
 	if err := repo.FromJSON(repoJSON); err != nil {
 		return nil, errors.Wrap(err, "parse repository from JSON")
 	}

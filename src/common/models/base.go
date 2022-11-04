@@ -15,7 +15,7 @@
 package models
 
 import (
-	"github.com/astaxie/beego/orm"
+	"github.com/beego/beego/orm"
 )
 
 func init() {
@@ -24,9 +24,7 @@ func init() {
 		new(Project),
 		new(Role),
 		new(AccessLog),
-		new(ScanJob),
 		new(RepoRecord),
-		new(ImgScanOverview),
 		new(ClairVulnTimestamp),
 		new(ProjectMetadata),
 		new(ConfigEntry),
@@ -35,7 +33,6 @@ func init() {
 		new(UserGroup),
 		new(AdminJob),
 		new(JobLog),
-		new(Robot),
 		new(OIDCUser),
 		new(NotificationPolicy),
 		new(NotificationJob),

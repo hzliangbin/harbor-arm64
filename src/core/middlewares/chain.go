@@ -21,9 +21,11 @@ import (
 	"github.com/goharbor/harbor/src/core/middlewares/chart"
 	"github.com/goharbor/harbor/src/core/middlewares/contenttrust"
 	"github.com/goharbor/harbor/src/core/middlewares/countquota"
+	"github.com/goharbor/harbor/src/core/middlewares/immutable"
 	"github.com/goharbor/harbor/src/core/middlewares/listrepo"
 	"github.com/goharbor/harbor/src/core/middlewares/multiplmanifest"
 	"github.com/goharbor/harbor/src/core/middlewares/readonly"
+	"github.com/goharbor/harbor/src/core/middlewares/regtoken"
 	"github.com/goharbor/harbor/src/core/middlewares/sizequota"
 	"github.com/goharbor/harbor/src/core/middlewares/url"
 	"github.com/goharbor/harbor/src/core/middlewares/vulnerable"
@@ -70,6 +72,8 @@ func (b *DefaultCreator) geMiddleware(mName string) alice.Constructor {
 		VULNERABLE:       func(next http.Handler) http.Handler { return vulnerable.New(next) },
 		SIZEQUOTA:        func(next http.Handler) http.Handler { return sizequota.New(next) },
 		COUNTQUOTA:       func(next http.Handler) http.Handler { return countquota.New(next) },
+		IMMUTABLE:        func(next http.Handler) http.Handler { return immutable.New(next) },
+		REGTOKEN:         func(next http.Handler) http.Handler { return regtoken.New(next) },
 	}
 	return middlewares[mName]
 }

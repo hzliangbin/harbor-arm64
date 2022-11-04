@@ -15,17 +15,17 @@
 package api
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
-	"errors"
 	"github.com/goharbor/harbor/src/common"
 	"github.com/goharbor/harbor/src/common/config"
 	"github.com/goharbor/harbor/src/common/config/metadata"
 	"github.com/goharbor/harbor/src/common/dao"
-	"github.com/goharbor/harbor/src/common/models"
 	"github.com/goharbor/harbor/src/common/security/secret"
 	"github.com/goharbor/harbor/src/common/utils/log"
+	"github.com/goharbor/harbor/src/core/api/models"
 	corecfg "github.com/goharbor/harbor/src/core/config"
 	"github.com/goharbor/harbor/src/core/filter"
 )
@@ -126,7 +126,7 @@ func (c *ConfigAPI) validateCfg(cfgs map[string]interface{}) (bool, error) {
 		return true, err
 	}
 	if !flag {
-		if failedKeys := checkUnmodifiable(c.cfgManager, cfgs, common.AUTHMode, common.HTTPAuthProxyCaseSensitive); len(failedKeys) > 0 {
+		if failedKeys := checkUnmodifiable(c.cfgManager, cfgs, common.AUTHMode); len(failedKeys) > 0 {
 			return false, fmt.Errorf("the keys %v can not be modified as new users have been inserted into database", failedKeys)
 		}
 	}
@@ -162,7 +162,9 @@ func convertForGet(cfg map[string]interface{}) (map[string]*value, error) {
 	}
 
 	if _, ok := cfg[common.ScanAllPolicy]; !ok {
-		cfg[common.ScanAllPolicy] = models.DefaultScanAllPolicy
+		cfg[common.ScanAllPolicy] = models.ScanAllPolicy{
+			Type: "none", // For legacy compatible
+		}
 	}
 	for k, v := range cfg {
 		result[k] = &value{

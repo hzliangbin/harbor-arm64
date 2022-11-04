@@ -34,14 +34,13 @@ import { ConfirmationDialogComponent } from "../../shared/confirmation-dialog/co
 @Component({
   templateUrl: './webhook.component.html',
   styleUrls: ['./webhook.component.scss'],
-  // changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class WebhookComponent implements OnInit {
-  @ViewChild(AddWebhookComponent)
+  @ViewChild(AddWebhookComponent, { static: false } )
   addWebhookComponent: AddWebhookComponent;
-  @ViewChild(AddWebhookFormComponent)
+  @ViewChild(AddWebhookFormComponent, { static: false })
   addWebhookFormComponent: AddWebhookFormComponent;
-  @ViewChild("confirmationDialogComponent")
+  @ViewChild("confirmationDialogComponent", { static: false })
   confirmationDialogComponent: ConfirmationDialogComponent;
   webhook: Webhook;
   endpoint: string = '';
@@ -53,11 +52,13 @@ export class WebhookComponent implements OnInit {
   loadingWebhook: boolean = true;
   projectId: number;
   projectName: string;
+  hasCreatPermission: boolean = false;
+  hasUpdatePermission: boolean = false;
   constructor(
     private route: ActivatedRoute,
     private translate: TranslateService,
     private webhookService: WebhookService,
-    private messageHandlerService: MessageHandlerService) {}
+    private messageHandlerService: MessageHandlerService) { }
 
   ngOnInit() {
     this.projectId = +this.route.snapshot.parent.params['id'];
@@ -67,8 +68,15 @@ export class WebhookComponent implements OnInit {
       this.projectName = project.name;
     }
     this.getData(this.projectId);
+    this.getPermissions();
   }
-
+  getPermissions() {
+    this.webhookService.getPermissions(this.projectId).subscribe(
+      rules => {
+        [this.hasCreatPermission, this.hasUpdatePermission] = rules;
+      }
+    );
+  }
   getData(projectId: number) {
     this.getLastTriggers(projectId);
     this.getWebhook(projectId);
@@ -115,8 +123,8 @@ export class WebhookComponent implements OnInit {
     let content = '';
     this.translate.get(
       enabled
-      ? 'WEBHOOK.ENABLED_WEBHOOK_SUMMARY'
-      : 'WEBHOOK.DISABLED_WEBHOOK_SUMMARY'
+        ? 'WEBHOOK.ENABLED_WEBHOOK_SUMMARY'
+        : 'WEBHOOK.DISABLED_WEBHOOK_SUMMARY'
     ).subscribe((res) => content = res + this.projectName);
     let message = new ConfirmationMessage(
       enabled ? 'WEBHOOK.ENABLED_WEBHOOK_TITLE' : 'WEBHOOK.DISABLED_WEBHOOK_TITLE',
@@ -131,20 +139,20 @@ export class WebhookComponent implements OnInit {
 
   confirmSwitch(message: ConfirmationAcknowledgement) {
     if (message &&
-        message.source === ConfirmationTargets.WEBHOOK &&
-        message.state === ConfirmationState.CONFIRMED) {
-        this.webhookService
-          .editWebhook(this.projectId, this.webhook.id, Object.assign({}, this.webhook, { enabled: !this.isEnabled }))
-          .subscribe(
-            response => {
-              this.getData(this.projectId);
-            },
-            error => {
-              this.messageHandlerService.handleError(error);
-            }
-          );
+      message.source === ConfirmationTargets.WEBHOOK &&
+      message.state === ConfirmationState.CONFIRMED) {
+      this.webhookService
+        .editWebhook(this.projectId, this.webhook.id, Object.assign({}, this.webhook, { enabled: !this.isEnabled }))
+        .subscribe(
+          response => {
+            this.getData(this.projectId);
+          },
+          error => {
+            this.messageHandlerService.handleError(error);
+          }
+        );
     }
-}
+  }
 
   editWebhook(isModify: boolean): void {
     this.getData(this.projectId);

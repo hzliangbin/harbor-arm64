@@ -29,10 +29,10 @@ export class RegistryConfigComponent implements OnInit {
 
     @Input() hasAdminRole: boolean = false;
 
-    @ViewChild("systemSettings") systemSettings: SystemSettingsComponent;
-    @ViewChild("vulnerabilityConfig") vulnerabilityCfg: VulnerabilityConfigComponent;
-    @ViewChild("gc") gc: GcComponent;
-    @ViewChild("cfgConfirmationDialog") confirmationDlg: ConfirmationDialogComponent;
+    @ViewChild("systemSettings", {static: false}) systemSettings: SystemSettingsComponent;
+    @ViewChild("vulnerabilityConfig", {static: false}) vulnerabilityCfg: VulnerabilityConfigComponent;
+    @ViewChild("gc", {static: false}) gc: GcComponent;
+    @ViewChild("cfgConfirmationDialog", {static: false}) confirmationDlg: ConfirmationDialogComponent;
 
     constructor(
         private configService: ConfigurationService,
@@ -48,11 +48,6 @@ export class RegistryConfigComponent implements OnInit {
     get hasCAFile(): boolean {
         return this.systemInfo && this.systemInfo.has_ca_root;
     }
-
-    get withClair(): boolean {
-        return this.systemInfo && this.systemInfo.with_clair;
-    }
-
     get withAdmiral(): boolean {
         return this.systemInfo && this.systemInfo.with_admiral;
     }
@@ -64,10 +59,9 @@ export class RegistryConfigComponent implements OnInit {
     }
 
     isValid(): boolean {
-        return this.systemSettings &&
+        return !!(this.systemSettings &&
             this.systemSettings.isValid &&
-            this.vulnerabilityCfg &&
-            this.vulnerabilityCfg.isValid;
+            this.vulnerabilityCfg);
     }
 
     hasChanges(): boolean {

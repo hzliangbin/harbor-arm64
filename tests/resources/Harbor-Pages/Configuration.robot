@@ -140,10 +140,10 @@ Self Reg Should Be Enabled
     Checkbox Should Be Selected  xpath=${self_reg_xpath}
 
 Project Creation Should Display
-    Page Should Contain Element  xpath=${project_create_xpath}
+    Retry Wait Until Page Contains Element  xpath=${project_create_xpath}
 
 Project Creation Should Not Display
-    Page Should Not Contain Element  xpath=${project_create_xpath}
+    Retry Wait Until Page Not Contains Element  xpath=${project_create_xpath}
 
 ## System settings
 Switch To System Settings
@@ -155,7 +155,8 @@ Switch To System Settings
 Switch To Project Quotas
     Sleep  1
     Retry Element Click  xpath=${configuration_xpath}
-    Retry Element Click  xpath=${configuration_project_quotas_tabsheet_id}
+    Sleep  1
+    Retry Element Click  xpath=//clr-main-container//clr-vertical-nav//a[contains(.,'Project Quotas')]
     Sleep  1
 
 Modify Token Expiration
@@ -192,24 +193,24 @@ Switch To Email
     Sleep  1
 
 Config Email
-    Input Text  xpath=//*[@id='mailServer']  smtp.vmware.com
+    Input Text  xpath=//*[@id='mailServer']  smtp.harbortest.com
     Input Text  xpath=//*[@id='emailPort']  25
-    Input Text  xpath=//*[@id='emailUsername']  example@vmware.com
+    Input Text  xpath=//*[@id='emailUsername']  example@harbortest.com
     Input Text  xpath=//*[@id='emailPassword']  example
-    Input Text  xpath=//*[@id='emailFrom']  example<example@vmware.com>
+    Input Text  xpath=//*[@id='emailFrom']  example<example@harbortest.com>
+    Sleep  1    
+    Retry Element Click  xpath=//*[@id='emailSSL-wrapper']/label
     Sleep  1
-    Retry Element Click  xpath=//clr-checkbox-wrapper[@id='emailSSL-wrapper']//label
-    Sleep  1
-    Retry Element Click  xpath=//clr-checkbox-wrapper[@id='emailInsecure-wrapper']//label
+    Retry Element Click  xpath=//*[@id='emailInsecure-wrapper']/label
     Sleep  1
     Retry Element Click  xpath=${config_email_save_button_xpath}
     Sleep  6
 
 Verify Email
-    Textfield Value Should Be  xpath=//*[@id='mailServer']  smtp.vmware.com
+    Textfield Value Should Be  xpath=//*[@id='mailServer']  smtp.harbortest.com
     Textfield Value Should Be  xpath=//*[@id='emailPort']  25
-    Textfield Value Should Be  xpath=//*[@id='emailUsername']  example@vmware.com
-    Textfield Value Should Be  xpath=//*[@id='emailFrom']  example<example@vmware.com>
+    Textfield Value Should Be  xpath=//*[@id='emailUsername']  example@harbortest.com
+    Textfield Value Should Be  xpath=//*[@id='emailFrom']  example<example@harbortest.com>
     Checkbox Should Be Selected  xpath=//*[@id='emailSSL']
     Checkbox Should Not Be Selected  xpath=//*[@id='emailInsecure']
 
@@ -242,8 +243,7 @@ Disable Read Only
 ## System labels
 Switch To System Labels
     Sleep  1
-    Retry Element Click  xpath=${configuration_xpath}
-    Retry Element Click  xpath=//*[@id='config-label']
+    Retry Element Click  xpath=//clr-main-container//clr-vertical-nav//a[contains(.,'Labels')]
 
 ## System labels
 Switch To Configuration System Setting
@@ -253,8 +253,7 @@ Switch To Configuration System Setting
 
 Switch To Configuration Project Quotas
     Sleep  1
-    Retry Element Click  xpath=${configuration_xpath}
-    Retry Element Click  xpath=${configuration_project_quotas}
+    Retry Element Click  xpath=//clr-main-container//clr-vertical-nav//a[contains(.,'Project Quotas')]
 
 Create New Labels
     [Arguments]  ${labelname}
@@ -291,7 +290,7 @@ Delete A Label
     Sleep  3
     Capture Page Screenshot
     Retry Element Click  xpath=//clr-modal//div//button[contains(.,'DELETE')]
-    Wait Until Page Contains Element  //clr-tab-content//div[contains(.,'${labelname}')]/../div/clr-icon[@shape='success-standard']
+    Wait Until Page Contains Element  //*[@id='contentAll']//div[contains(.,'${labelname}')]/../div/clr-icon[@shape='success-standard']
 
 ## Garbage Collection
 Switch To Garbage Collection

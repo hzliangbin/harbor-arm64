@@ -1,5 +1,5 @@
 
-import {throwError as observableThrowError,  Observable } from "rxjs";
+import { throwError as observableThrowError, Observable, of } from "rxjs";
 import {Injectable, Inject} from "@angular/core";
 import { HttpClient, HttpParams, HttpResponse } from "@angular/common/http";
 import { catchError } from "rxjs/operators";
@@ -70,7 +70,6 @@ export abstract class ProjectService {
     pageSize?: number
   ): Observable<HttpResponse<Project[]>>;
   abstract createProject(name: string, metadata: any, countLimit: number, storageLimit: number): Observable<any>;
-  abstract toggleProjectPublic(projectId: number, isPublic: string): Observable<any>;
   abstract deleteProject(projectId: number): Observable<any>;
   abstract checkProjectExists(projectName: string): Observable<any>;
   abstract checkProjectMember(projectId: number): Observable<any>;
@@ -162,12 +161,6 @@ export class ProjectDefaultService extends ProjectService {
                catchError(error => observableThrowError(error)), );
   }
 
-  public toggleProjectPublic(projectId: number, isPublic: string): Observable<any> {
-    return this.http
-               .put(`/api/projects/${projectId}`, { 'metadata': {'public': isPublic} }, HTTP_JSON_OPTIONS).pipe(
-               catchError(error => observableThrowError(error)), );
-  }
-
   public deleteProject(projectId: number): Observable<any> {
     return this.http
                .delete(`/api/projects/${projectId}`)
@@ -176,8 +169,13 @@ export class ProjectDefaultService extends ProjectService {
 
   public checkProjectExists(projectName: string): Observable<any> {
     return this.http
-               .head(`/api/projects/?project_name=${projectName}`).pipe(
-               catchError(error => observableThrowError(error)), );
+        .head(`/api/projects/?project_name=${projectName}`).pipe(
+            catchError(error => {
+              if (error && error.status === 404) {
+                return of(error);
+              }
+              return observableThrowError(error);
+            }));
   }
 
   public checkProjectMember(projectId: number): Observable<any> {

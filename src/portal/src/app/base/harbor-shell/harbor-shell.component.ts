@@ -27,6 +27,10 @@ import { SessionService } from '../../shared/session.service';
 import { AboutDialogComponent } from '../../shared/about-dialog/about-dialog.component';
 import { SearchTriggerService } from '../global-search/search-trigger.service';
 import { CommonRoutes } from '@harbor/ui';
+import { ConfigScannerService, SCANNERS_DOC } from "../../config/scanner/config-scanner.service";
+
+const HAS_SHOWED_SCANNER_INFO: string = 'hasShowScannerInfo';
+const YES: string = 'yes';
 
 @Component({
     selector: 'harbor-shell',
@@ -36,16 +40,16 @@ import { CommonRoutes } from '@harbor/ui';
 
 export class HarborShellComponent implements OnInit, OnDestroy {
 
-    @ViewChild(AccountSettingsModalComponent)
+    @ViewChild(AccountSettingsModalComponent, {static: false})
     accountSettingsModal: AccountSettingsModalComponent;
 
-    @ViewChild(PasswordSettingComponent)
+    @ViewChild(PasswordSettingComponent, {static: false})
     pwdSetting: PasswordSettingComponent;
 
-    @ViewChild(NavigatorComponent)
+    @ViewChild(NavigatorComponent, {static: false})
     navigator: NavigatorComponent;
 
-    @ViewChild(AboutDialogComponent)
+    @ViewChild(AboutDialogComponent, {static: false})
     aboutDialog: AboutDialogComponent;
 
     // To indicator whwther or not the search results page is displayed
@@ -55,20 +59,26 @@ export class HarborShellComponent implements OnInit, OnDestroy {
     searchSub: Subscription;
     searchCloseSub: Subscription;
     isLdapMode: boolean;
+    isOidcMode: boolean;
     isHttpAuthMode: boolean;
+    showScannerInfo: boolean = false;
+    scannerDocUrl: string = SCANNERS_DOC;
 
     constructor(
         private route: ActivatedRoute,
         private router: Router,
         private session: SessionService,
         private searchTrigger: SearchTriggerService,
-        private appConfigService: AppConfigService) { }
+        private appConfigService: AppConfigService,
+        private scannerService: ConfigScannerService) { }
 
     ngOnInit() {
         if (this.appConfigService.isLdapMode()) {
             this.isLdapMode = true;
         } else if (this.appConfigService.isHttpAuthMode()) {
             this.isHttpAuthMode = true;
+        } else if (this.appConfigService.isOidcMode()) {
+            this.isOidcMode = true;
         }
         this.searchSub = this.searchTrigger.searchTriggerChan$.subscribe(searchEvt => {
             if (searchEvt && searchEvt.trim() !== "") {
@@ -79,8 +89,25 @@ export class HarborShellComponent implements OnInit, OnDestroy {
         this.searchCloseSub = this.searchTrigger.searchCloseChan$.subscribe(close => {
             this.isSearchResultsOpened = false;
         });
+        if (!(localStorage && localStorage.getItem(HAS_SHOWED_SCANNER_INFO) === YES)) {
+           this.getDefaultScanner();
+        }
+    }
+    closeInfo() {
+        if (localStorage) {
+            localStorage.setItem(HAS_SHOWED_SCANNER_INFO, YES);
+        }
+        this.showScannerInfo = false;
     }
 
+    getDefaultScanner() {
+        this.scannerService.getScanners()
+            .subscribe(scanners => {
+                if (scanners && scanners.length) {
+                    this.showScannerInfo = scanners.some(scanner => scanner.is_default);
+                }
+            });
+    }
     ngOnDestroy(): void {
         if (this.searchSub) {
             this.searchSub.unsubscribe();
@@ -108,16 +135,13 @@ export class HarborShellComponent implements OnInit, OnDestroy {
         let account = this.session.getCurrentUser();
         return account != null;
     }
-
-    public get withClair(): boolean {
-        return this.appConfigService.getConfig().with_clair;
-    }
-
     public get hasAdminRole(): boolean {
         return this.session.getCurrentUser() &&
             this.session.getCurrentUser().has_admin_role;
     }
-
+    public get withAdmiral(): boolean {
+        return this.appConfigService.getConfig().with_admiral;
+    }
     // Open modal dialog
     openModal(event: ModalEvent): void {
         switch (event.modalName) {

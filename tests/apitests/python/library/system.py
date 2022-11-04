@@ -177,8 +177,18 @@ class System(base.Base):
         except Exception as e:
             base._assert_status_code(expected_status_code, e.status)
         else:
-            base._assert_status_code(expected_status_code, r[1])
+            base._assert_status_code(expected_status_code, r.status)
 
     def get_cve_whitelist(self, **kwargs):
         client = self._get_client(**kwargs)
         return client.system_cve_whitelist_get()
+
+    def get_project_quota(self, reference, reference_id, **kwargs):
+        params={}
+        params['reference'] = reference
+        params['reference_id'] = reference_id
+
+        client = self._get_client(**kwargs)
+        data, status_code, _ = client.quotas_get_with_http_info(**params)
+        base._assert_status_code(200, status_code)
+        return data

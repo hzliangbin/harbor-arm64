@@ -28,7 +28,7 @@ import (
 	"github.com/goharbor/harbor/src/chartserver"
 	"github.com/goharbor/harbor/src/common"
 
-	"github.com/astaxie/beego"
+	"github.com/beego/beego"
 	"github.com/dghubble/sling"
 	"github.com/goharbor/harbor/src/common/dao"
 	"github.com/goharbor/harbor/src/common/dao/project"
@@ -40,8 +40,8 @@ import (
 )
 
 var (
-	nonSysAdminID, projAdminID, projDeveloperID, projGuestID, projAdminRobotID int64
-	projAdminPMID, projDeveloperPMID, projGuestPMID, projAdminRobotPMID        int
+	nonSysAdminID, projAdminID, projDeveloperID, projGuestID, projLimitedGuestID, projAdminRobotID int64
+	projAdminPMID, projDeveloperPMID, projGuestPMID, projLimitedGuestPMID, projAdminRobotPMID      int
 	// The following users/credentials are registered and assigned roles at the beginning of
 	// running testing and cleaned up at the end.
 	// Do not try to change the system and project roles that the users have during
@@ -65,6 +65,10 @@ var (
 	}
 	projGuest = &usrInfo{
 		Name:   "proj_guest",
+		Passwd: "Harbor12345",
+	}
+	projLimitedGuest = &usrInfo{
+		Name:   "proj_limited_guest",
 		Passwd: "Harbor12345",
 	}
 	projAdmin4Robot = &usrInfo{
@@ -180,6 +184,7 @@ func runCodeCheckingCases(t *testing.T, cases ...*codeCheckingCase) {
 		if c.postFunc != nil {
 			if err := c.postFunc(resp); err != nil {
 				t.Logf("error in running post function: %v", err)
+				t.Error(err)
 			}
 		}
 	}
@@ -307,6 +312,24 @@ func prepare() error {
 		ProjectID:  1,
 		Role:       models.GUEST,
 		EntityID:   int(projGuestID),
+		EntityType: common.UserMember,
+	}); err != nil {
+		return err
+	}
+
+	// register projLimitedGuest and assign project limit guest role
+	projLimitedGuestID, err = dao.Register(models.User{
+		Username: projLimitedGuest.Name,
+		Password: projLimitedGuest.Passwd,
+		Email:    projLimitedGuest.Name + "@test.com",
+	})
+	if err != nil {
+		return err
+	}
+	if projLimitedGuestPMID, err = project.AddProjectMember(models.Member{
+		ProjectID:  1,
+		Role:       common.RoleLimitedGuest,
+		EntityID:   int(projLimitedGuestID),
 		EntityType: common.UserMember,
 	}); err != nil {
 		return err

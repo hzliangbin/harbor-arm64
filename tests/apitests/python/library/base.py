@@ -2,7 +2,12 @@
 
 import sys
 import time
+import subprocess
 import swagger_client
+try:
+    from urllib import getproxies
+except ImportError:
+    from urllib.request import getproxies
 
 class Server:
     def __init__(self, endpoint, verify_ssl):
@@ -23,6 +28,12 @@ def _create_client(server, credential, debug):
     cfg.username = credential.username
     cfg.password = credential.password
     cfg.debug = debug
+
+    proxies = getproxies()
+    proxy = proxies.get('http', proxies.get('all', None))
+    if proxy:
+        cfg.proxy = proxy
+
     return swagger_client.ProductsApi(swagger_client.ApiClient(cfg))
 
 def _assert_status_code(expect_code, return_code):
@@ -49,6 +60,24 @@ def _get_string_from_unicode(udata):
         tmp = u.encode('utf8')
         result = result + tmp.strip('\n\r\t')
     return result
+
+def run_command(command, expected_error_message = None):
+    print("Command: ", subprocess.list2cmdline(command))
+    try:
+        output = subprocess.check_output(command,
+                                         stderr=subprocess.STDOUT,
+                                         universal_newlines=True)
+    except subprocess.CalledProcessError as e:
+        print("Run command error:", str(e))
+        print("expected_error_message:", expected_error_message)
+        if expected_error_message is not None:
+            if str(e.output).lower().find(expected_error_message.lower()) < 0:
+                raise Exception(r"Error message {} is not as expected {}".format(str(e.output), expected_error_message))
+        else:
+            raise Exception('Error: Exited with error code: %s. Output:%s'% (e.returncode, e.output))
+    else:
+        print("output:", output)
+        return
 
 class Base:
     def __init__(self,

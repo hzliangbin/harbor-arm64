@@ -189,7 +189,7 @@ func (pma *ProjectMemberAPI) Put() {
 		pma.SendBadRequestError(err)
 		return
 	}
-	if req.Role < 1 || req.Role > 4 {
+	if !isValidRole(req.Role) {
 		pma.SendBadRequestError(fmt.Errorf("Invalid role id %v", req.Role))
 		return
 	}
@@ -249,8 +249,8 @@ func AddProjectMember(projectID int64, request models.MemberReq) (int, error) {
 			return 0, err
 		}
 		member.EntityID = groupID
-	} else if len(request.MemberGroup.GroupName) > 0 && request.MemberGroup.GroupType == common.HTTPGroupType {
-		ugs, err := group.QueryUserGroup(models.UserGroup{GroupName: request.MemberGroup.GroupName, GroupType: common.HTTPGroupType})
+	} else if len(request.MemberGroup.GroupName) > 0 && request.MemberGroup.GroupType == common.HTTPGroupType || request.MemberGroup.GroupType == common.OIDCGroupType {
+		ugs, err := group.QueryUserGroup(models.UserGroup{GroupName: request.MemberGroup.GroupName, GroupType: request.MemberGroup.GroupType})
 		if err != nil {
 			return 0, err
 		}
@@ -282,9 +282,22 @@ func AddProjectMember(projectID int64, request models.MemberReq) (int, error) {
 		return 0, ErrDuplicateProjectMember
 	}
 
-	if member.Role < 1 || member.Role > 4 {
+	if !isValidRole(member.Role) {
 		// Return invalid role error
 		return 0, ErrInvalidRole
 	}
 	return project.AddProjectMember(member)
+}
+
+func isValidRole(role int) bool {
+	switch role {
+	case common.RoleProjectAdmin,
+		common.RoleMaster,
+		common.RoleDeveloper,
+		common.RoleGuest,
+		common.RoleLimitedGuest:
+		return true
+	default:
+		return false
+	}
 }

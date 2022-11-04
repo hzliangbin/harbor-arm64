@@ -33,6 +33,7 @@ const (
 	RoleDeveloper    = 2
 	RoleGuest        = 3
 	RoleMaster       = 4
+	RoleLimitedGuest = 5
 
 	LabelLevelSystem  = "s"
 	LabelLevelUser    = "u"
@@ -104,12 +105,13 @@ const (
 	HTTPAuthProxyTokenReviewEndpoint = "http_authproxy_tokenreview_endpoint"
 	HTTPAuthProxyVerifyCert          = "http_authproxy_verify_cert"
 	HTTPAuthProxySkipSearch          = "http_authproxy_skip_search"
-	HTTPAuthProxyCaseSensitive       = "http_authproxy_case_sensitive"
+	HTTPAuthProxyServerCertificate   = "http_authproxy_server_certificate"
 	OIDCName                         = "oidc_name"
 	OIDCEndpoint                     = "oidc_endpoint"
 	OIDCCLientID                     = "oidc_client_id"
 	OIDCClientSecret                 = "oidc_client_secret"
 	OIDCVerifyCert                   = "oidc_verify_cert"
+	OIDCGroupsClaim                  = "oidc_groups_claim"
 	OIDCScope                        = "oidc_scope"
 
 	DefaultClairEndpoint              = "http://clair:6060"
@@ -121,11 +123,13 @@ const (
 	GroupMember                       = "g"
 	ReadOnly                          = "read_only"
 	ClairURL                          = "clair_url"
+	ClairAdapterURL                   = "clair_adapter_url"
 	NotaryURL                         = "notary_url"
 	DefaultCoreEndpoint               = "http://core:8080"
 	DefaultNotaryEndpoint             = "http://notary-server:4443"
 	LDAPGroupType                     = 1
 	HTTPGroupType                     = 2
+	OIDCGroupType                     = 3
 	LDAPGroupAdminDn                  = "ldap_group_admin_dn"
 	LDAPGroupMembershipAttribute      = "ldap_group_membership_attribute"
 	DefaultRegistryControllerEndpoint = "http://registryctl:8080"
@@ -134,7 +138,6 @@ const (
 	DefaultChartRepoURL               = "http://chartmuseum:9999"
 	DefaultPortalURL                  = "http://portal:8080"
 	DefaultRegistryCtlURL             = "http://registryctl:8080"
-	DefaultClairHealthCheckServerURL  = "http://clair:6061"
 	// Use this prefix to distinguish harbor user, the prefix contains a special character($), so it cannot be registered as a harbor user.
 	RobotPrefix = "robot$"
 	// Use this prefix to index user who tries to login with web hook token.

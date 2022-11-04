@@ -16,11 +16,12 @@ package impl
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math"
+	"sync"
 	"time"
 
-	"errors"
 	comcfg "github.com/goharbor/harbor/src/common/config"
 	"github.com/goharbor/harbor/src/common/dao"
 	"github.com/goharbor/harbor/src/jobservice/config"
@@ -45,12 +46,14 @@ type Context struct {
 	cfgMgr comcfg.CfgManager
 	// job life cycle tracker
 	tracker job.Tracker
+	// job logger configs settings map lock
+	lock sync.Mutex
 }
 
 // NewContext ...
 func NewContext(sysCtx context.Context, cfgMgr *comcfg.CfgManager) *Context {
 	return &Context{
-		sysContext: sysCtx,
+		sysContext: comcfg.NewContext(sysCtx, cfgMgr),
 		cfgMgr:     *cfgMgr,
 		properties: make(map[string]interface{}),
 	}
@@ -123,6 +126,8 @@ func (c *Context) Build(tracker job.Tracker) (job.Context, error) {
 	}
 
 	// Set loggers for job
+	c.lock.Lock()
+	defer c.lock.Unlock()
 	lg, err := createLoggers(tracker.Job().Info.JobID)
 	if err != nil {
 		return nil, err

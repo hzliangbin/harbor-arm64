@@ -226,15 +226,52 @@ export class CustomComparator<T> implements Comparator<T> {
 export const DEFAULT_PAGE_SIZE: number = 15;
 
 /**
+ *  The default supported mime type
+ */
+export const DEFAULT_SUPPORTED_MIME_TYPE = "application/vnd.scanner.adapter.vuln.report.harbor+json; version=1.0";
+
+/**
+ *  the property name of vulnerability database updated time
+ */
+export const DATABASE_UPDATED_PROPERTY = "harbor.scanner-adapter/vulnerability-database-updated-at";
+
+/**
  * The state of vulnerability scanning
  */
 export const VULNERABILITY_SCAN_STATUS = {
-    unknown: "n/a",
-    pending: "pending",
-    running: "running",
-    error: "error",
-    stopped: "stopped",
-    finished: "finished"
+    // front-end status
+    NOT_SCANNED: "Not Scanned",
+    // back-end status
+    PENDING: "Pending",
+    RUNNING: "Running",
+    ERROR: "Error",
+    STOPPED: "Stopped",
+    SUCCESS: "Success",
+    SCHEDULED: "Scheduled"
+};
+/**
+ * The severity of vulnerability scanning
+ */
+export const VULNERABILITY_SEVERITY = {
+    NEGLIGIBLE: "Negligible",
+    UNKNOWN: "Unknown",
+    LOW: "Low",
+    MEDIUM: "Medium",
+    HIGH: "High",
+    CRITICAL: "Critical",
+    NONE: "None"
+};
+/**
+ * The level of vulnerability severity for comparing
+ */
+export const SEVERITY_LEVEL_MAP = {
+    "Critical": 6,
+    "High": 5,
+    "Medium": 4,
+    "Low": 3,
+    "Negligible": 2,
+    "Unknown": 1,
+    "None": 0
 };
 
 /**
@@ -245,7 +282,12 @@ export function calculatePage(state: State): number {
         return 1;
     }
 
-    return Math.ceil((state.page.to + 1) / state.page.size);
+    let pageNumber = Math.ceil((state.page.to + 1) / state.page.size);
+    if (pageNumber === 0) {
+        return 1;
+    } else {
+        return pageNumber;
+    }
 }
 
 /**

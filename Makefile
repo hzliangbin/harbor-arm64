@@ -9,7 +9,7 @@
 # compile_golangimage:
 #			compile from golang image
 #			for example: make compile_golangimage -e GOBUILDIMAGE= \
-#							golang:1.12.12
+#							golang:1.17.9
 # compile_core, compile_jobservice: compile specific binary
 #
 # build:	build Harbor docker images from photon baseimage
@@ -79,7 +79,7 @@ DEVFLAG=true
 NOTARYFLAG=false
 CLAIRFLAG=false
 HTTPPROXY=
-BUILDBIN=true
+BUILDBIN=false
 MIGRATORFLAG=false
 NPM_REGISTRY=https://registry.npmjs.org
 # enable/disable chart repo supporting
@@ -88,26 +88,24 @@ CHARTFLAG=false
 # version prepare
 # for docker image tag
 VERSIONTAG=dev
+# for base docker image tag
+BASEIMAGETAG=dev
 # for harbor package name
 PKGVERSIONTAG=dev
-# for harbor about dialog
-UIVERSIONTAG=dev
-VERSIONFILEPATH=$(CURDIR)
-VERSIONFILENAME=UIVERSION
+# input true/false only
+PULL_BASE_FROM_DOCKERHUB=true
 
 PREPARE_VERSION_NAME=versions
 
 #versions
 REGISTRYVERSION=v2.7.1-patch-2819-2553
-NGINXVERSION=$(VERSIONTAG)
 NOTARYVERSION=v0.6.1
-CLAIRVERSION=v2.1.0
-MIGRATORVERSION=$(VERSIONTAG)
-REDISVERSION=$(VERSIONTAG)
+CLAIRVERSION=v2.1.6
 NOTARYMIGRATEVERSION=v3.5.4
+CLAIRADAPTERVERSION=v1.0.1
 
 # version of chartmuseum
-CHARTMUSEUMVERSION=v0.9.0
+CHARTMUSEUMVERSION=v0.12.0
 
 # version of registry for pulling the source code
 REGISTRY_SRC_TAG=v2.7.1
@@ -117,6 +115,7 @@ VERSION_TAG: $(VERSIONTAG)
 REGISTRY_VERSION: $(REGISTRYVERSION)
 NOTARY_VERSION: $(NOTARYVERSION)
 CLAIR_VERSION: $(CLAIRVERSION)
+CLAIR_ADAPTER_VERSION: $(CLAIRADAPTERVERSION)
 CHARTMUSEUM_VERSION: $(CHARTMUSEUMVERSION)
 endef
 
@@ -138,10 +137,26 @@ GOINSTALL=$(GOCMD) install
 GOTEST=$(GOCMD) test
 GODEP=$(GOTEST) -i
 GOFMT=gofmt -w
-GOBUILDIMAGE=golang:1.12.12
+GOBUILDIMAGE=golang:1.17.9
 GOBUILDPATH=/harbor
-GOIMAGEBUILDCMD=/usr/local/go/bin/go
-GOIMAGEBUILD=$(GOIMAGEBUILDCMD) build -mod vendor
+
+# go build
+PKG_PATH=github.com/goharbor/harbor/src/pkg
+GITCOMMIT := $(shell git rev-parse --short=8 HEAD)
+RELEASEVERSION := $(shell cat VERSION)
+GOFLAGS=
+GOTAGS=$(if $(GOBUILDTAGS),-tags "$(GOBUILDTAGS)",)
+GOLDFLAGS=$(if $(GOBUILDLDFLAGS),--ldflags "-w -s $(GOBUILDLDFLAGS)",)
+CORE_LDFLAGS=-X $(PKG_PATH)/version.GitCommit=$(GITCOMMIT) -X $(PKG_PATH)/version.ReleaseVersion=$(RELEASEVERSION)
+ifneq ($(GOBUILDLDFLAGS),)
+	CORE_LDFLAGS += $(GOBUILDLDFLAGS)
+endif
+
+# go build command
+GOIMAGEBUILDCMD=/usr/local/go/bin/go build -mod vendor
+GOIMAGEBUILD_COMMON=$(GOIMAGEBUILDCMD) $(GOFLAGS) ${GOTAGS} ${GOLDFLAGS}
+GOIMAGEBUILD_CORE=$(GOIMAGEBUILDCMD) $(GOFLAGS) ${GOTAGS} --ldflags "-w -s $(CORE_LDFLAGS)"
+
 GOBUILDPATH_CORE=$(GOBUILDPATH)/src/core
 GOBUILDPATH_JOBSERVICE=$(GOBUILDPATH)/src/jobservice
 GOBUILDPATH_REGISTRYCTL=$(GOBUILDPATH)/src/registryctl
@@ -230,41 +245,41 @@ DOCKERSAVE_PARA=$(DOCKER_IMAGE_NAME_PREPARE):$(VERSIONTAG) \
 		$(DOCKERIMAGENAME_DB):$(VERSIONTAG) \
 		$(DOCKERIMAGENAME_JOBSERVICE):$(VERSIONTAG) \
 		$(DOCKERIMAGENAME_REGCTL):$(VERSIONTAG) \
-		goharbor/redis-photon:$(REDISVERSION) \
-		goharbor/nginx-photon:$(NGINXVERSION) goharbor/registry-photon:$(REGISTRYVERSION)-$(VERSIONTAG)
+		goharbor/redis-photon:$(VERSIONTAG) \
+		goharbor/nginx-photon:$(VERSIONTAG) \
+		goharbor/registry-photon:$(VERSIONTAG)
 
 PACKAGE_OFFLINE_PARA=-zcvf harbor-offline-installer-$(PKGVERSIONTAG).tgz \
 					$(HARBORPKG)/$(DOCKERIMGFILE).$(VERSIONTAG).tar.gz \
 					$(HARBORPKG)/prepare \
 					$(HARBORPKG)/LICENSE $(HARBORPKG)/install.sh \
+					$(HARBORPKG)/common.sh \
 					$(HARBORPKG)/harbor.yml
 
 PACKAGE_ONLINE_PARA=-zcvf harbor-online-installer-$(PKGVERSIONTAG).tgz \
 					$(HARBORPKG)/prepare \
 					$(HARBORPKG)/LICENSE \
 					$(HARBORPKG)/install.sh \
+					$(HARBORPKG)/common.sh \
 					$(HARBORPKG)/harbor.yml
 
 DOCKERCOMPOSE_FILE_OPT=-f $(DOCKERCOMPOSEFILEPATH)/$(DOCKERCOMPOSEFILENAME)
 
 ifeq ($(NOTARYFLAG), true)
-	DOCKERSAVE_PARA+= goharbor/notary-server-photon:$(NOTARYVERSION)-$(VERSIONTAG) goharbor/notary-signer-photon:$(NOTARYVERSION)-$(VERSIONTAG)
+	DOCKERSAVE_PARA+= goharbor/notary-server-photon:$(VERSIONTAG) goharbor/notary-signer-photon:$(VERSIONTAG)
 endif
 ifeq ($(CLAIRFLAG), true)
-	DOCKERSAVE_PARA+= goharbor/clair-photon:$(CLAIRVERSION)-$(VERSIONTAG)
+	DOCKERSAVE_PARA+= goharbor/clair-photon:$(VERSIONTAG) goharbor/clair-adapter-photon:$(VERSIONTAG)
 endif
 ifeq ($(MIGRATORFLAG), true)
-	DOCKERSAVE_PARA+= goharbor/harbor-migrator:$(MIGRATORVERSION)
+	DOCKERSAVE_PARA+= goharbor/harbor-migrator:$(VERSIONTAG)
 endif
 # append chartmuseum parameters if set
 ifeq ($(CHARTFLAG), true)
-	DOCKERSAVE_PARA+= $(DOCKERIMAGENAME_CHART_SERVER):$(CHARTMUSEUMVERSION)-$(VERSIONTAG)
+	DOCKERSAVE_PARA+= $(DOCKERIMAGENAME_CHART_SERVER):$(VERSIONTAG)
 endif
 
 export VERSIONS_FOR_PREPARE
-ui_version:
-	@printf $(UIVERSIONTAG) > $(VERSIONFILEPATH)/$(VERSIONFILENAME);
-
 versions_prepare:
 	@echo "$$VERSIONS_FOR_PREPARE" > $(MAKE_PREPARE_PATH)/$(PREPARE_VERSION_NAME)
 
@@ -274,22 +289,22 @@ check_environment:
 compile_core:
 	@echo "compiling binary for core (golang image)..."
 	@echo $(GOBUILDPATH)
-	@$(DOCKERCMD) run --rm -v $(BUILDPATH):$(GOBUILDPATH) -w $(GOBUILDPATH_CORE) $(GOBUILDIMAGE) $(GOIMAGEBUILD) -o $(GOBUILDMAKEPATH_CORE)/$(CORE_BINARYNAME)
+	@$(DOCKERCMD) run --rm -v $(BUILDPATH):$(GOBUILDPATH) -w $(GOBUILDPATH_CORE) $(GOBUILDIMAGE) $(GOIMAGEBUILD_CORE) -o $(GOBUILDMAKEPATH_CORE)/$(CORE_BINARYNAME)
 	@echo "Done."
 
 compile_jobservice:
 	@echo "compiling binary for jobservice (golang image)..."
-	@$(DOCKERCMD) run --rm -v $(BUILDPATH):$(GOBUILDPATH) -w $(GOBUILDPATH_JOBSERVICE) $(GOBUILDIMAGE) $(GOIMAGEBUILD) -o $(GOBUILDMAKEPATH_JOBSERVICE)/$(JOBSERVICEBINARYNAME)
+	@$(DOCKERCMD) run --rm -v $(BUILDPATH):$(GOBUILDPATH) -w $(GOBUILDPATH_JOBSERVICE) $(GOBUILDIMAGE) $(GOIMAGEBUILD_COMMON) -o $(GOBUILDMAKEPATH_JOBSERVICE)/$(JOBSERVICEBINARYNAME)
 	@echo "Done."
 
 compile_registryctl:
 	@echo "compiling binary for harbor registry controller (golang image)..."
-	@$(DOCKERCMD) run --rm -v $(BUILDPATH):$(GOBUILDPATH) -w $(GOBUILDPATH_REGISTRYCTL) $(GOBUILDIMAGE) $(GOIMAGEBUILD) -o $(GOBUILDMAKEPATH_REGISTRYCTL)/$(REGISTRYCTLBINARYNAME)
+	@$(DOCKERCMD) run --rm -v $(BUILDPATH):$(GOBUILDPATH) -w $(GOBUILDPATH_REGISTRYCTL) $(GOBUILDIMAGE) $(GOIMAGEBUILD_COMMON) -o $(GOBUILDMAKEPATH_REGISTRYCTL)/$(REGISTRYCTLBINARYNAME)
 	@echo "Done."
 
 compile_notary_migrate_patch:
 	@echo "compiling binary for migrate patch (golang image)..."
-	@$(DOCKERCMD) run --rm -v $(BUILDPATH):$(GOBUILDPATH) -w $(GOBUILDPATH_MIGRATEPATCH) $(GOBUILDIMAGE) $(GOIMAGEBUILD) -o $(GOBUILDMAKEPATH_NOTARY)/$(MIGRATEPATCHBINARYNAME)
+	@$(DOCKERCMD) run --rm -v $(BUILDPATH):$(GOBUILDPATH) -w $(GOBUILDPATH_MIGRATEPATCH) $(GOBUILDIMAGE) $(GOIMAGEBUILD_COMMON) -o $(GOBUILDMAKEPATH_NOTARY)/$(MIGRATEPATCHBINARYNAME)
 	@echo "Done."
 
 compile: check_environment versions_prepare compile_core compile_jobservice compile_registryctl compile_notary_migrate_patch
@@ -303,14 +318,38 @@ prepare: update_prepare_version
 	@$(MAKEPATH)/$(PREPARECMD) $(PREPARECMD_PARA)
 
 build:
-	make -f $(MAKEFILEPATH_PHOTON)/Makefile build -e DEVFLAG=$(DEVFLAG) \
-	 -e REGISTRYVERSION=$(REGISTRYVERSION) -e NGINXVERSION=$(NGINXVERSION) -e NOTARYVERSION=$(NOTARYVERSION) -e NOTARYMIGRATEVERSION=$(NOTARYMIGRATEVERSION) \
-	 -e CLAIRVERSION=$(CLAIRVERSION) -e VERSIONTAG=$(VERSIONTAG) -e REGISTRY_SRC_TAG=$(REGISTRY_SRC_TAG) \
-	 -e BUILDBIN=$(BUILDBIN) -e REDISVERSION=$(REDISVERSION) -e MIGRATORVERSION=$(MIGRATORVERSION) \
+# PUSHBASEIMAGE should not be true if BUILD_BASE is not true
+	@if [ "$(PULL_BASE_FROM_DOCKERHUB)" != "true" ] && [ "$(PULL_BASE_FROM_DOCKERHUB)" != "false" ] ; then \
+		echo set PULL_BASE_FROM_DOCKERHUB to true or false.; exit 1; \
+	fi
+	make -f $(MAKEFILEPATH_PHOTON)/Makefile build -e DEVFLAG=$(DEVFLAG) -e GOBUILDIMAGE=$(GOBUILDIMAGE) \
+	 -e REGISTRYVERSION=$(REGISTRYVERSION) -e REGISTRY_SRC_TAG=$(REGISTRY_SRC_TAG) -e NOTARYVERSION=$(NOTARYVERSION) -e NOTARYMIGRATEVERSION=$(NOTARYMIGRATEVERSION) \
+	 -e CLAIRVERSION=$(CLAIRVERSION) -e CLAIRADAPTERVERSION=$(CLAIRADAPTERVERSION) -e VERSIONTAG=$(VERSIONTAG) \
+	 -e BUILDBIN=$(BUILDBIN) \
 	 -e CHARTMUSEUMVERSION=$(CHARTMUSEUMVERSION) -e DOCKERIMAGENAME_CHART_SERVER=$(DOCKERIMAGENAME_CHART_SERVER) \
-	 -e NPM_REGISTRY=$(NPM_REGISTRY)
+	 -e NPM_REGISTRY=$(NPM_REGISTRY) -e BASEIMAGETAG=$(BASEIMAGETAG) -e PULL_BASE_FROM_DOCKERHUB=$(PULL_BASE_FROM_DOCKERHUB)
 
-install: compile ui_version build prepare start
+build_base_docker:
+	if [ -n "$(REGISTRYUSER)" ] && [ -n "$(REGISTRYPASSWORD)" ] ; then \
+		docker login -u $(REGISTRYUSER) -p $(REGISTRYPASSWORD) ; \
+	else \
+		echo "No docker credentials provided, please make sure enough priviledges to access docker hub!" ; \
+	fi
+	@for name in chartserver clair clair-adapter core db jobservice log nginx notary-server notary-signer portal prepare redis registry registryctl; do \
+		echo $$name ; \
+		$(DOCKERBUILD) --pull -f $(MAKEFILEPATH_PHOTON)/$$name/Dockerfile.base -t goharbor/harbor-$$name-base:$(BASEIMAGETAG) . && \
+		$(PUSHSCRIPTPATH)/$(PUSHSCRIPTNAME) goharbor/harbor-$$name-base:$(BASEIMAGETAG) $(REGISTRYUSER) $(REGISTRYPASSWORD) || exit 1 ; \
+	done
+	@echo build_base_docker done
+
+build_base_images:
+	@echo build_base_images start
+	@for name in chartserver clair clair-adapter core db jobservice log nginx notary-server notary-signer portal prepare redis registry registryctl; do \
+		$(DOCKERBUILD) --pull -f $(MAKEFILEPATH_PHOTON)/$$name/Dockerfile.base -t goharbor/harbor-$$name-base:$(BASEIMAGETAG) .; \
+	done
+	@echo build_base_images done
+
+install: compile build prepare start
 
 package_online: update_prepare_version
 	@echo "packing online package ..."
@@ -325,7 +364,7 @@ package_online: update_prepare_version
 	@rm -rf $(HARBORPKG)
 	@echo "Done."
 
-package_offline: update_prepare_version compile ui_version build
+package_offline: update_prepare_version compile build
 
 	@echo "packing offline package ..."
 	@cp -r make $(HARBORPKG)
@@ -376,11 +415,11 @@ misspell:
 
 golint:
 	@echo checking golint...
-	@go list ./... | grep -v -E 'vendor|test' | xargs -L1 fgt golint
+	@cd ./src;go list ./... | grep -v -E 'vendor|test' | xargs -L1 golint
 
 govet:
 	@echo checking govet...
-	@go list ./... | grep -v -E 'vendor|test' | xargs -L1 go vet
+	@cd ./src;go list ./... | grep -v -E 'vendor|test' | xargs -L1 go vet
 
 pushimage:
 	@echo "pushing harbor images ..."
@@ -430,10 +469,10 @@ down:
 
 swagger_client:
 	@echo "Generate swagger client"
-	wget -q http://central.maven.org/maven2/io/swagger/swagger-codegen-cli/2.3.1/swagger-codegen-cli-2.3.1.jar -O swagger-codegen-cli.jar
+	wget https://repo1.maven.org/maven2/org/openapitools/openapi-generator-cli/4.3.1/openapi-generator-cli-4.3.1.jar -O openapi-generator-cli.jar
 	rm -rf harborclient
 	mkdir harborclient
-	java -jar swagger-codegen-cli.jar generate -i docs/swagger.yaml -l python -o harborclient
+	java -jar openapi-generator-cli.jar generate -i api/harbor/swagger.yaml -g python -o harborclient --package-name swagger_client
 	cd harborclient; python ./setup.py install
 	pip install docker -q
 	pip freeze
@@ -455,10 +494,6 @@ cleandockercomposefile:
 	@find $(DOCKERCOMPOSEFILEPATH) -maxdepth 1 -name "docker-compose*.yml" -exec rm -f {} \;
 	@find $(DOCKERCOMPOSEFILEPATH) -maxdepth 1 -name "docker-compose*.yml-e" -exec rm -f {} \;
 
-cleanversiontag:
-	@echo "cleaning version TAG"
-	@rm -rf $(VERSIONFILEPATH)/$(VERSIONFILENAME)
-
 cleanpackage:
 	@echo "cleaning harbor install package"
 	@if [ -d $(BUILDPATH)/harbor ] ; then rm -rf $(BUILDPATH)/harbor ; fi
@@ -468,7 +503,7 @@ cleanpackage:
 	then rm $(BUILDPATH)/harbor-offline-installer-$(VERSIONTAG).tgz ; fi
 
 .PHONY: cleanall
-cleanall: cleanbinary cleanimage cleandockercomposefile cleanversiontag cleanpackage
+cleanall: cleanbinary cleanimage cleandockercomposefile cleanpackage
 
 clean:
 	@echo "  make cleanall:		remove binary, Harbor images, specific version docker-compose"
@@ -476,7 +511,6 @@ clean:
 	@echo "  make cleanbinary:		remove core and jobservice binary"
 	@echo "  make cleanimage:		remove Harbor images"
 	@echo "  make cleandockercomposefile:	remove specific version docker-compose"
-	@echo "  make cleanversiontag:		cleanpackageremove specific version tag"
 	@echo "  make cleanpackage:		remove online and offline install package"
 
 all: install

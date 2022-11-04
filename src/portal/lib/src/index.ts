@@ -4,6 +4,7 @@ export * from "./service/index";
 export * from "./error-handler/index";
 export * from "./shared/shared.const";
 export * from "./shared/shared.utils";
+export * from "./shared/shared.module";
 export * from "./utils";
 export * from "./log/index";
 export * from "./filter/index";
@@ -28,4 +29,5 @@ export * from "./repository-gridview/index";
 export * from "./operation/index";
 export * from "./_animations/index";
 export * from "./cron-schedule/index";
+export * from "./cache/index";
 

@@ -15,6 +15,7 @@ package api
 
 import (
 	"fmt"
+	"github.com/goharbor/harbor/src/common"
 	"net/http"
 	"strconv"
 	"testing"
@@ -118,7 +119,7 @@ func TestAddProject(t *testing.T) {
 	// case 4: response code = 400 : Project name is illegal in length
 	fmt.Println("case 4 : response code = 400 : Project name is illegal in length ")
 
-	result, err = apiTest.ProjectsPost(*admin, apilib.ProjectReq{ProjectName: "t", Metadata: map[string]string{models.ProMetaPublic: "true"}})
+	result, err = apiTest.ProjectsPost(*admin, apilib.ProjectReq{ProjectName: "", Metadata: map[string]string{models.ProMetaPublic: "true"}})
 	if err != nil {
 		t.Error("Error while creat project", err.Error())
 		t.Log(err)
@@ -528,4 +529,55 @@ func TestProjectSummary(t *testing.T) {
 	}
 
 	fmt.Printf("\n")
+}
+
+func TestHighestRole(t *testing.T) {
+	cases := []struct {
+		input  []int
+		expect int
+	}{
+		{
+			[]int{},
+			0,
+		},
+		{
+			[]int{
+				common.RoleDeveloper,
+				common.RoleMaster,
+				common.RoleLimitedGuest,
+			},
+			common.RoleMaster,
+		},
+		{
+			[]int{
+				common.RoleProjectAdmin,
+				common.RoleMaster,
+				common.RoleMaster,
+			},
+			common.RoleProjectAdmin,
+		},
+		{
+			[]int{
+				99,
+				33,
+				common.RoleLimitedGuest,
+			},
+			common.RoleLimitedGuest,
+		},
+		{
+			[]int{
+				99,
+				99,
+				99,
+			},
+			0,
+		},
+		{
+			nil,
+			0,
+		},
+	}
+	for _, c := range cases {
+		assert.Equal(t, c.expect, highestRole(c.input))
+	}
 }

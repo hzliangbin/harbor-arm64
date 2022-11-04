@@ -46,9 +46,8 @@ import { errorHandler as errorHandFn } from "../shared/shared.utils";
     selector: "hbr-repository-gridview",
     templateUrl: "./repository-gridview.component.html",
     styleUrls: ["./repository-gridview.component.scss"],
-    changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class RepositoryGridviewComponent implements OnChanges, OnInit {
+export class RepositoryGridviewComponent implements OnInit {
     signedCon: { [key: string]: any | string[] } = {};
     downloadLink: string;
     @Input() projectId: number;
@@ -80,10 +79,10 @@ export class RepositoryGridviewComponent implements OnChanges, OnInit {
     totalCount = 0;
     currentState: State;
 
-    @ViewChild("confirmationDialog")
+    @ViewChild("confirmationDialog", {static: false})
     confirmationDialog: ConfirmationDialogComponent;
 
-    @ViewChild("gridView") gridView: GridViewComponent;
+    @ViewChild("gridView", {static: false}) gridView: GridViewComponent;
     hasCreateRepositoryPermission: boolean;
     hasDeleteRepositoryPermission: boolean;
     constructor(@Inject(SERVICE_CONFIG) private configInfo: IServiceConfig,
@@ -94,7 +93,6 @@ export class RepositoryGridviewComponent implements OnChanges, OnInit {
         private tagService: TagService,
         private operationService: OperationService,
         public userPermissionService: UserPermissionService,
-        private ref: ChangeDetectorRef,
         private router: Router) {
         if (this.configInfo && this.configInfo.systemInfoEndpoint) {
             this.downloadLink = this.configInfo.systemInfoEndpoint + "/getcert";
@@ -104,11 +102,6 @@ export class RepositoryGridviewComponent implements OnChanges, OnInit {
     public get registryUrl(): string {
         return this.systemInfo ? this.systemInfo.registry_url : "";
     }
-
-    public get withClair(): boolean {
-        return this.systemInfo ? this.systemInfo.with_clair : false;
-    }
-
     public get isClairDBReady(): boolean {
         return (
             this.systemInfo &&
@@ -120,33 +113,15 @@ export class RepositoryGridviewComponent implements OnChanges, OnInit {
     public get withAdmiral(): boolean {
         return this.mode === "admiral";
     }
-
-    public get showDBStatusWarning(): boolean {
-        return this.withClair && !this.isClairDBReady;
-    }
-
     get canDownloadCert(): boolean {
         return this.systemInfo && this.systemInfo.has_ca_root;
     }
-
-    ngOnChanges(changes: SimpleChanges): void {
-        if (changes["projectId"] && changes["projectId"].currentValue) {
-            this.refresh();
-        }
-    }
-
     ngOnInit(): void {
         // Get system info for tag views
         this.systemInfoService.getSystemInfo()
             .subscribe(systemInfo => (this.systemInfo = systemInfo)
                 , error => this.errorHandler.error(error));
-
-        if (this.mode === "admiral") {
-            this.isCardView = true;
-        } else {
-            this.isCardView = false;
-        }
-
+        this.isCardView = this.mode === "admiral";
         this.lastFilteredRepoName = "";
         this.getHelmChartVersionPermission(this.projectId);
     }
@@ -181,6 +156,7 @@ export class RepositoryGridviewComponent implements OnChanges, OnInit {
                     }, error => {
                         this.errorHandler.error(error);
                         this.loading = false;
+                        this.refresh();
                     });
                 }
             }
@@ -275,10 +251,7 @@ export class RepositoryGridviewComponent implements OnChanges, OnInit {
             {
                 repoName: repoName,
                 signedImages: signature,
-            }).pipe(finalize(() => {
-                let hnd = setInterval(() => this.ref.markForCheck(), 100);
-                setTimeout(() => clearInterval(hnd), 5000);
-            }))
+            })
             .subscribe((res: string) => {
                 summaryKey = res;
                 let message = new ConfirmationMessage(
@@ -289,8 +262,6 @@ export class RepositoryGridviewComponent implements OnChanges, OnInit {
                     ConfirmationTargets.REPOSITORY,
                     button);
                 this.confirmationDialog.open(message);
-
-
             });
     }
 
@@ -335,12 +306,6 @@ export class RepositoryGridviewComponent implements OnChanges, OnInit {
         evt.stopPropagation();
         this.deleteRepos([item]);
     }
-
-    selectedChange(): void {
-        let hnd = setInterval(() => this.ref.markForCheck(), 100);
-        setTimeout(() => clearInterval(hnd), 2000);
-    }
-
     refresh() {
         this.doSearchRepoNames("");
     }
@@ -355,7 +320,7 @@ export class RepositoryGridviewComponent implements OnChanges, OnInit {
             this.projectId,
             this.lastFilteredRepoName,
             params
-        )
+        ).pipe(finalize(() => this.loading = false))
             .subscribe((repo: Repository) => {
                 this.totalCount = repo.metadata.xTotalCount;
                 this.repositoriesCopy = repo.data;
@@ -370,13 +335,9 @@ export class RepositoryGridviewComponent implements OnChanges, OnInit {
                     this.currentState
                 );
                 this.repositories = this.repositories.concat(this.repositoriesCopy);
-                this.loading = false;
             }, error => {
-                this.loading = false;
                 this.errorHandler.error(error);
             });
-        let hnd = setInterval(() => this.ref.markForCheck(), 500);
-        setTimeout(() => clearInterval(hnd), 5000);
     }
 
     clrLoad(state: State): void {
@@ -394,14 +355,12 @@ export class RepositoryGridviewComponent implements OnChanges, OnInit {
 
         // Pagination
         let params: RequestQueryParams = new RequestQueryParams().set("page", "" + pageNumber).set("page_size", "" + this.pageSize);
-
         this.loading = true;
-
         this.repositoryService.getRepositories(
             this.projectId,
             this.lastFilteredRepoName,
             params
-        )
+        ).pipe(finalize(() => this.loading = false))
             .subscribe((repo: Repository) => {
 
                 this.totalCount = repo.metadata.xTotalCount;
@@ -414,15 +373,9 @@ export class RepositoryGridviewComponent implements OnChanges, OnInit {
                     state
                 );
                 this.repositories = doSorting<RepositoryItem>(this.repositories, state);
-                this.loading = false;
             }, error => {
-                this.loading = false;
                 this.errorHandler.error(error);
             });
-
-        // Force refresh view
-        let hnd = setInterval(() => this.ref.markForCheck(), 100);
-        setTimeout(() => clearInterval(hnd), 5000);
     }
 
     getStateAfterDeletion(): State {

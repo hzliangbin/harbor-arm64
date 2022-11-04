@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/astaxie/beego/orm"
+	"github.com/beego/beego/orm"
 
 	"github.com/goharbor/harbor/src/common/models"
 	"github.com/goharbor/harbor/src/common/utils"
@@ -249,7 +249,7 @@ func OnBoardUser(u *models.User) error {
 	if created {
 		u.UserID = int(id)
 		// current orm framework doesn't support to fetch a pointer or sql.NullString with QueryRow
-		// https://github.com/astaxie/beego/issues/3767
+		// https://github.com/beego/beego/issues/3767
 		if len(u.Email) == 0 {
 			_, err = o.Raw("update harbor_user set email = null where user_id = ? ", id).Exec()
 			if err != nil {
@@ -284,17 +284,11 @@ func IsSuperUser(username string) bool {
 
 // CleanUser - Clean this user information from DB
 func CleanUser(id int64) error {
-	if _, err := GetOrmer().QueryTable(&models.User{}).
-		Filter("UserID", id).Delete(); err != nil {
-		return err
-	}
-	return nil
+	_, err := GetOrmer().QueryTable(&models.User{}).Filter("UserID", id).Delete()
+	return err
 }
 
 // MatchPassword returns true is password matched
 func matchPassword(u *models.User, password string) bool {
-	if u.Password != utils.Encrypt(password, u.Salt, u.PasswordVersion) {
-		return false
-	}
-	return true
+	return utils.Encrypt(password, u.Salt, u.PasswordVersion) == u.Password
 }

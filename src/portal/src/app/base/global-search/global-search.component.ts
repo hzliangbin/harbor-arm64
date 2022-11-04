@@ -1,5 +1,5 @@
 
-import {debounceTime} from 'rxjs/operators';
+import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 // Copyright (c) 2017 VMware, Inc. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -58,8 +58,8 @@ export class GlobalSearchComponent implements OnInit, OnDestroy {
     ngOnInit(): void {
         // custom skin
         let customSkinObj = this.skinableConfig.getProject();
-        if (customSkinObj && customSkinObj.projectName) {
-            this.translate.get('GLOBAL_SEARCH.PLACEHOLDER', {'param': customSkinObj.projectName}).subscribe(res => {
+        if (customSkinObj && customSkinObj.name) {
+            this.translate.get('GLOBAL_SEARCH.PLACEHOLDER', {'param': customSkinObj.name}).subscribe(res => {
                 // Placeholder text
                 this.placeholderText = res;
             });
@@ -71,7 +71,8 @@ export class GlobalSearchComponent implements OnInit, OnDestroy {
         }
 
         this.searchSub = this.searchTerms.pipe(
-            debounceTime(deBounceTime))
+            debounceTime(deBounceTime),
+            distinctUntilChanged())
             .subscribe(term => {
                 this.searchTrigger.triggerSearch(term);
             });

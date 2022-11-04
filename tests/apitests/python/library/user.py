@@ -12,7 +12,7 @@ class User(base.Base):
         if realname is None:
             realname = base._random_name("realname")
         if email is None:
-            email = '%s@%s.com' % (realname,"vmware")
+            email = '%s@%s.com' % (realname,"harbortest")
         if user_password is None:
             user_password = "Harbor12345678"
         if role_id is None:
@@ -45,7 +45,6 @@ class User(base.Base):
         client = self._get_client(**kwargs)
         data, status_code, _ = client.users_user_id_get_with_http_info(user_id)
         base._assert_status_code(200, status_code)
-        print "data in lib:", data
         return data
 
 
@@ -80,7 +79,6 @@ class User(base.Base):
     def update_user_role_as_sysadmin(self, user_id, IsAdmin, **kwargs):
         client = self._get_client(**kwargs)
         has_admin_role = swagger_client.HasAdminRole(IsAdmin)
-        print "has_admin_role:", has_admin_role
         _, status_code, _ = client.users_user_id_sysadmin_put_with_http_info(user_id, has_admin_role)
         base._assert_status_code(200, status_code)
         return user_id

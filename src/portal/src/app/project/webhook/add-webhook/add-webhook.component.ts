@@ -16,13 +16,13 @@ import { AddWebhookFormComponent } from "../add-webhook-form/add-webhook-form.co
 })
 export class AddWebhookComponent implements OnInit {
   isOpen: boolean = false;
-  closable: boolean = true;
+  closable: boolean = false;
   staticBackdrop: boolean = true;
 
   @Input() projectId: number;
   @Input() webhook: Webhook;
   @Output() modify = new EventEmitter<boolean>();
-  @ViewChild(AddWebhookFormComponent)
+  @ViewChild(AddWebhookFormComponent, { static: false })
   addWebhookFormComponent: AddWebhookFormComponent;
 
 

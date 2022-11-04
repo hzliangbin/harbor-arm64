@@ -33,6 +33,14 @@ import (
 var creatorMap map[string]Creator
 var registryFilterMap map[string]accessFilter
 var notaryFilterMap map[string]accessFilter
+var actionScopeMap = map[rbac.Action]string{
+	// Scopes checked by distribution, see: https://github.com/docker/distribution/blob/master/registry/handlers/app.go
+	rbac.ActionPull:   "pull",
+	rbac.ActionPush:   "push",
+	rbac.ActionDelete: "delete",
+	// For skipping policy check when scanner pulls artifacts
+	rbac.ActionScannerPull: "scanner-pull",
+}
 
 const (
 	// Notary service
@@ -160,7 +168,6 @@ func (rep repositoryFilter) filter(ctx security.Context, pm promgr.ProjectManage
 		return err
 	}
 	projectName := img.namespace
-	permission := ""
 
 	project, err := pm.Get(projectName)
 	if err != nil {
@@ -171,18 +178,36 @@ func (rep repositoryFilter) filter(ctx security.Context, pm promgr.ProjectManage
 		a.Actions = []string{}
 		return nil
 	}
-
 	resource := rbac.NewProjectNamespace(project.ProjectID).Resource(rbac.ResourceRepository)
-	if ctx.Can(rbac.ActionPush, resource) && ctx.Can(rbac.ActionPull, resource) {
-		permission = "RWM"
-	} else if ctx.Can(rbac.ActionPush, resource) {
-		permission = "RW"
-	} else if ctx.Can(rbac.ActionPull, resource) {
-		permission = "R"
+	scopeList := make([]string, 0)
+	for s := range resourceScopes(ctx, resource) {
+		scopeList = append(scopeList, s)
+	}
+	a.Actions = scopeList
+	return nil
+}
+
+func resourceScopes(sCtx security.Context, rc rbac.Resource) map[string]struct{} {
+	res := map[string]struct{}{}
+	for a, s := range actionScopeMap {
+		if sCtx.Can(a, rc) {
+			res[s] = struct{}{}
+		}
 	}
 
-	a.Actions = permToActions(permission)
-	return nil
+	// "*" is needed in the token for some API in notary server
+	// see https://github.com/goharbor/harbor/issues/14303#issuecomment-788010900
+	// and https://github.com/theupdateframework/notary/blob/84287fd8df4f172c9a8289641cdfa355fc86989d/server/server.go#L200
+	_, ok1 := res["push"]
+	_, ok2 := res["pull"]
+	_, ok3 := res["delete"]
+	if ok1 && ok2 && ok3 {
+		res["*"] = struct{}{}
+	}
+	if ok1 && !ok2 {
+		res["pull"] = struct{}{}
+	}
+	return res
 }
 
 type generalCreator struct {

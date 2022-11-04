@@ -15,12 +15,17 @@
 package vulnerable
 
 import (
-	"fmt"
-	"github.com/goharbor/harbor/src/common/utils/log"
-	"github.com/goharbor/harbor/src/core/config"
-	"github.com/goharbor/harbor/src/core/middlewares/util"
-	"github.com/goharbor/harbor/src/pkg/scan"
 	"net/http"
+
+	"github.com/goharbor/harbor/src/common/models"
+	"github.com/goharbor/harbor/src/common/utils/log"
+	"github.com/goharbor/harbor/src/core/middlewares/util"
+	sc "github.com/goharbor/harbor/src/pkg/scan/api/scan"
+	"github.com/goharbor/harbor/src/pkg/scan/report"
+	v1 "github.com/goharbor/harbor/src/pkg/scan/rest/v1"
+	"github.com/goharbor/harbor/src/pkg/scan/vuln"
+	"github.com/pkg/errors"
+	"net/http/httptest"
 )
 
 type vulnerableHandler struct {
@@ -36,45 +41,100 @@ func New(next http.Handler) http.Handler {
 
 // ServeHTTP ...
 func (vh vulnerableHandler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
-	imgRaw := req.Context().Value(util.ImageInfoCtxKey)
-	if imgRaw == nil || !config.WithClair() {
+	doVulCheck, img, projectVulnerableSeverity, wl := validate(req)
+	if !doVulCheck {
 		vh.next.ServeHTTP(rw, req)
 		return
 	}
-	img, _ := req.Context().Value(util.ImageInfoCtxKey).(util.ImageInfo)
-	if img.Digest == "" {
-		vh.next.ServeHTTP(rw, req)
-		return
+
+	rec := httptest.NewRecorder()
+	vh.next.ServeHTTP(rec, req)
+	// only enable vul policy check the response 200
+	if rec.Result().StatusCode == http.StatusOK {
+		// Invalid project ID
+		if wl.ProjectID == 0 {
+			err := errors.Errorf("project verification error: project %s", img.ProjectName)
+			vh.sendError(err, rw)
+			return
+		}
+
+		// Get the vulnerability summary
+		artifact := &v1.Artifact{
+			NamespaceID: wl.ProjectID,
+			Repository:  img.Repository,
+			Tag:         img.Reference,
+			Digest:      img.Digest,
+			MimeType:    v1.MimeTypeDockerArtifact,
+		}
+
+		cve := report.CVESet(wl.CVESet())
+		summaries, err := sc.DefaultController.GetSummary(
+			artifact,
+			[]string{v1.MimeTypeNativeReport},
+			report.WithCVEWhitelist(&cve),
+		)
+
+		if err != nil {
+			err = errors.Wrap(err, "middleware: vulnerable handler")
+			vh.sendError(err, rw)
+			return
+		}
+
+		rawSummary, ok := summaries[v1.MimeTypeNativeReport]
+		// No report yet?
+		if !ok {
+			err = errors.Errorf("no scan report existing for the artifact: %s:%s@%s", img.Repository, img.Reference, img.Digest)
+			vh.sendError(err, rw)
+			return
+		}
+
+		summary := rawSummary.(*vuln.NativeReportSummary)
+
+		// Do judgement
+		if summary.Severity.Code() >= projectVulnerableSeverity.Code() {
+			err = errors.Errorf("current image with '%q vulnerable' cannot be pulled due to configured policy in 'Prevent images with vulnerability severity of %q from running.' "+
+				"Please contact your project administrator for help'", summary.Severity, projectVulnerableSeverity)
+			vh.sendError(err, rw)
+			return
+		}
+
+		// Print scannerPull CVE list
+		if len(summary.CVEBypassed) > 0 {
+			for _, cve := range summary.CVEBypassed {
+				log.Infof("Vulnerable policy check: scannerPull CVE %s", cve)
+			}
+		}
 	}
-	projectVulnerableEnabled, projectVulnerableSeverity, wl := util.GetPolicyChecker().VulnerablePolicy(img.ProjectName)
-	if !projectVulnerableEnabled {
-		vh.next.ServeHTTP(rw, req)
-		return
-	}
-	vl, err := scan.VulnListByDigest(img.Digest)
-	if err != nil {
-		log.Errorf("Failed to get the vulnerability list, error: %v", err)
-		http.Error(rw, util.MarshalError("PROJECT_POLICY_VIOLATION", "Failed to get vulnerabilities."), http.StatusPreconditionFailed)
-		return
-	}
-	filtered := vl.ApplyWhitelist(wl)
-	msg := vh.filterMsg(img, filtered)
-	log.Info(msg)
-	if int(vl.Severity()) >= int(projectVulnerableSeverity) {
-		log.Debugf("the image severity: %q is higher then project setting: %q, failing the response.", vl.Severity(), projectVulnerableSeverity)
-		http.Error(rw, util.MarshalError("PROJECT_POLICY_VIOLATION", fmt.Sprintf("The severity of vulnerability of the image: %q is equal or higher than the threshold in project setting: %q.", vl.Severity(), projectVulnerableSeverity)), http.StatusPreconditionFailed)
-		return
-	}
-	vh.next.ServeHTTP(rw, req)
+	util.CopyResp(rec, rw)
 }
 
-func (vh vulnerableHandler) filterMsg(img util.ImageInfo, filtered scan.VulnerabilityList) string {
-	filterMsg := fmt.Sprintf("Image: %s/%s:%s, digest: %s, vulnerabilities fitered by whitelist:", img.ProjectName, img.Repository, img.Reference, img.Digest)
-	if len(filtered) == 0 {
-		filterMsg = fmt.Sprintf("%s none.", filterMsg)
+func validate(req *http.Request) (bool, util.ImageInfo, vuln.Severity, models.CVEWhitelist) {
+	var vs vuln.Severity
+	var wl models.CVEWhitelist
+	var img util.ImageInfo
+	imgRaw := req.Context().Value(util.ImageInfoCtxKey)
+	if imgRaw == nil {
+		return false, img, vs, wl
 	}
-	for _, v := range filtered {
-		filterMsg = fmt.Sprintf("%s ID: %s, severity: %s;", filterMsg, v.ID, v.Severity)
+
+	// Expected artifact specified?
+	img, ok := imgRaw.(util.ImageInfo)
+	if !ok || len(img.Digest) == 0 {
+		return false, img, vs, wl
 	}
-	return filterMsg
+
+	if scannerPull, ok := util.ScannerPullFromContext(req.Context()); ok && scannerPull {
+		return false, img, vs, wl
+	}
+	// Is vulnerable policy set?
+	projectVulnerableEnabled, projectVulnerableSeverity, wl := util.GetPolicyChecker().VulnerablePolicy(img.ProjectName)
+	if !projectVulnerableEnabled {
+		return false, img, vs, wl
+	}
+	return true, img, projectVulnerableSeverity, wl
+}
+
+func (vh vulnerableHandler) sendError(err error, rw http.ResponseWriter) {
+	log.Error(err)
+	http.Error(rw, util.MarshalError("PROJECT_POLICY_VIOLATION", err.Error()), http.StatusPreconditionFailed)
 }

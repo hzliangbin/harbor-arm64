@@ -18,7 +18,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/astaxie/beego/orm"
+	"github.com/beego/beego/orm"
 	"github.com/goharbor/harbor/src/common/dao"
 	"github.com/goharbor/harbor/src/common/utils/log"
 	"github.com/goharbor/harbor/src/replication/dao/models"
@@ -228,7 +228,7 @@ func UpdateExecution(execution *models.Execution, props ...string) (int64, error
 func AddTask(task *models.Task) (int64, error) {
 	o := dao.GetOrmer()
 	now := time.Now()
-	task.StartTime = &now
+	task.StartTime = now
 
 	return o.Insert(task)
 }
@@ -351,8 +351,5 @@ func UpdateTaskStatus(id int64, status string, statusRevision int64, statusCondi
 }
 
 func taskFinished(status string) bool {
-	if status == models.TaskStatusFailed || status == models.TaskStatusStopped || status == models.TaskStatusSucceed {
-		return true
-	}
-	return false
+	return status == models.TaskStatusFailed || status == models.TaskStatusStopped || status == models.TaskStatusSucceed
 }

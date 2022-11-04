@@ -81,9 +81,9 @@ export class TagRetentionComponent implements OnInit {
     totalLogCount: number = 0;
     logPageSize: number = 5;
     isDetailOpened: boolean = false;
-    @ViewChild('cronScheduleComponent')
+    @ViewChild('cronScheduleComponent', {static: false})
     cronScheduleComponent: CronScheduleComponent;
-    @ViewChild('addRule') addRuleComponent: AddRuleComponent;
+    @ViewChild('addRule', {static: false}) addRuleComponent: AddRuleComponent;
     constructor(
         private route: ActivatedRoute,
         private tagRetentionService: TagRetentionService,
@@ -116,14 +116,7 @@ export class TagRetentionComponent implements OnInit {
             level: "project",
             ref: this.projectId
         };
-        let resolverData = this.route.snapshot.parent.data;
-        if (resolverData) {
-            let project = <Project>resolverData["projectResolver"];
-            if (project.metadata && project.metadata.retention_id) {
-                this.retentionId = project.metadata.retention_id;
-            }
-        }
-        this.getRetention();
+        this.refreshAfterCreatRetention();
         this.getMetadata();
     }
     openConfirm(cron: string) {

@@ -8,11 +8,11 @@
             <div class="flex-xs-middle option-left">
               <div>
                 <span class="endpoint-label">Webhook endpoint</span>: {{endpoint}}
-                <button class="btn btn-link" id="edit-webhook" (click)="openAddWebhookModal()">{{'WEBHOOK.EDIT_BUTTON' | translate}}</button>
+                <button [disabled]="!hasUpdatePermission" class="btn btn-link" id="edit-webhook" (click)="openAddWebhookModal()">{{'WEBHOOK.EDIT_BUTTON' | translate}}</button>
               </div>
               <div [ngSwitch]="isEnabled">
-                <button *ngSwitchCase="false" id="enable-webhook-action" class="btn btn-link" (click)="switchWebhookStatus(true)">{{'WEBHOOK.ENABLED_BUTTON' | translate}}</button>
-                <button *ngSwitchCase="true" id="disable-webhook-action" class="btn btn-link disabled-btn" (click)="switchWebhookStatus(false)">{{'WEBHOOK.DISABLED_BUTTON' | translate}}</button>
+                <button [disabled]="!hasUpdatePermission" *ngSwitchCase="false" id="enable-webhook-action" class="btn btn-link" (click)="switchWebhookStatus(true)">{{'WEBHOOK.ENABLED_BUTTON' | translate}}</button>
+                <button [disabled]="!hasUpdatePermission" *ngSwitchCase="true" id="disable-webhook-action" class="btn btn-link disabled-btn" (click)="switchWebhookStatus(false)">{{'WEBHOOK.DISABLED_BUTTON' | translate}}</button>
               </div>
             </div>
         </div>
@@ -46,8 +46,7 @@
     </div>
   </div>
   <div *ngIf="showCreate">
-    <h2 class="create-text create-text-title">{{'WEBHOOK.CREATE_WEBHOOK' | translate}}</h2>
-    <p class="create-text">{{'WEBHOOK.CREATE_WEBHOOK_DESC' | translate}}</p>
+    <p class="create-text pt-1">{{'WEBHOOK.CREATE_WEBHOOK_DESC' | translate}}</p>
     <add-webhook-form class="webhook-form-wrap" [projectId]="projectId" [webhook]="webhook" [isModify]="false" (edit)="editWebhook($event)"></add-webhook-form>
   </div>
   <add-webhook [projectId]="projectId" [webhook]="webhook" (modify)="editWebhook($event)"></add-webhook>

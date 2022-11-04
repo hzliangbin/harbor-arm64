@@ -75,7 +75,7 @@ export class CreateEditRuleComponent implements OnInit, OnDestroy {
   @Output() goToRegistry = new EventEmitter<any>();
   @Output() reload = new EventEmitter<boolean>();
 
-  @ViewChild(InlineAlertComponent) inlineAlert: InlineAlertComponent;
+  @ViewChild(InlineAlertComponent, {static: true}) inlineAlert: InlineAlertComponent;
   constructor(
     private fb: FormBuilder,
     private repService: ReplicationService,
@@ -123,7 +123,7 @@ export class CreateEditRuleComponent implements OnInit, OnDestroy {
             this.inNameChecking = true;
             this.repService.getReplicationRules(0, ruleName)
               .subscribe(response => {
-                if (response.some(rule => rule.name === ruleName)) {
+                if (response.some(rule => (rule.name === ruleName && rule.id !== this.policyId))) {
                   this.ruleNameTooltip = "TOOLTIP.RULE_USER_EXISTING";
                   this.isRuleNameValid = false;
                 }
@@ -203,8 +203,8 @@ export class CreateEditRuleComponent implements OnInit, OnDestroy {
         })
       }),
       filters: this.fb.array([]),
-      deletion: false,
       enabled: true,
+      deletion: false,
       override: true
     });
   }

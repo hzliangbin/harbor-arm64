@@ -61,19 +61,20 @@ export class ProjectPolicyConfigComponent implements OnInit {
     @Input() hasSignedIn: boolean;
     @Input() hasProjectAdminRole: boolean;
 
-    @ViewChild('cfgConfirmationDialog') confirmationDlg: ConfirmationDialogComponent;
-    @ViewChild('dateInput') dateInput: ElementRef;
-    @ViewChild('dateSystemInput') dateSystemInput: ElementRef;
+    @ViewChild('cfgConfirmationDialog', {static: false}) confirmationDlg: ConfirmationDialogComponent;
+    @ViewChild('dateInput', {static: false}) dateInput: ElementRef;
+    @ViewChild('dateSystemInput', {static: false}) dateSystemInput: ElementRef;
 
     systemInfo: SystemInfo;
     orgProjectPolicy = new ProjectPolicy();
     projectPolicy = new ProjectPolicy();
     hasChangeConfigRole: boolean;
     severityOptions = [
+        {severity: 'critical', severityLevel: 'VULNERABILITY.SEVERITY.CRITICAL'},
         {severity: 'high', severityLevel: 'VULNERABILITY.SEVERITY.HIGH'},
         {severity: 'medium', severityLevel: 'VULNERABILITY.SEVERITY.MEDIUM'},
         {severity: 'low', severityLevel: 'VULNERABILITY.SEVERITY.LOW'},
-        {severity: 'negligible', severityLevel: 'VULNERABILITY.SEVERITY.NEGLIGIBLE'},
+        {severity: 'none', severityLevel: 'VULNERABILITY.SEVERITY.NONE'},
     ];
     userSystemWhitelist: boolean = true;
     showAddModal: boolean = false;
@@ -106,11 +107,9 @@ export class ProjectPolicyConfigComponent implements OnInit {
         this.systemInfoService.getSystemInfo()
             .subscribe(systemInfo => {
                 this.systemInfo = systemInfo;
-                if (this.withClair) {
-                    setTimeout(() => {
-                        this.dateSystemInput.nativeElement.parentNode.setAttribute("hidden", "hidden");
-                    }, 100);
-                }
+                setTimeout(() => {
+                    this.dateSystemInput.nativeElement.parentNode.setAttribute("hidden", "hidden");
+                }, 100);
             } , error => this.errorHandler.error(error));
         // retrive project level policy data
         this.retrieve();
@@ -146,11 +145,6 @@ export class ProjectPolicyConfigComponent implements OnInit {
     public get withNotary(): boolean {
         return this.systemInfo ? this.systemInfo.with_notary : false;
     }
-
-    public get withClair(): boolean {
-        return this.systemInfo ? this.systemInfo.with_clair : false;
-    }
-
     retrieve(state?: State): any {
         this.projectService.getProject(this.projectId)
             .subscribe(

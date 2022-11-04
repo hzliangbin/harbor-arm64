@@ -64,12 +64,13 @@ export class MemberComponent implements OnInit, OnDestroy {
   batchChangeRoleInfos = {};
   isLdapMode: boolean;
   isHttpAuthMode: boolean;
-  @ViewChild(AddMemberComponent)
+  isOidcMode: boolean;
+  @ViewChild(AddMemberComponent, {static: false})
   addMemberComponent: AddMemberComponent;
 
-  @ViewChild(AddGroupComponent)
+  @ViewChild(AddGroupComponent, {static: false})
   addGroupComponent: AddGroupComponent;
-  @ViewChild(AddHttpAuthGroupComponent)
+  @ViewChild(AddHttpAuthGroupComponent, {static: false})
   addHttpAuthGroupComponent: AddHttpAuthGroupComponent;
   hasCreateMemberPermission: boolean;
   hasUpdateMemberPermission: boolean;
@@ -120,6 +121,9 @@ export class MemberComponent implements OnInit, OnDestroy {
     }
     if (this.appConfigService.isHttpAuthMode()) {
       this.isHttpAuthMode = true;
+    }
+    if (this.appConfigService.isOidcMode()) {
+      this.isOidcMode = true;
     }
   }
   doSearch(searchMember: string) {
@@ -252,7 +256,7 @@ export class MemberComponent implements OnInit, OnDestroy {
     // Function to delete specific member
     let deleteMember = (projectId: number, member: Member) => {
       let operMessage = new OperateInfo();
-      operMessage.name = 'OPERATION.DELETE_MEMBER';
+      operMessage.name = member.entity_type === 'u' ? 'OPERATION.DELETE_MEMBER' : 'OPERATION.DELETE_GROUP';
       operMessage.data.id = member.id;
       operMessage.state = OperationState.progressing;
       operMessage.data.name = member.entity_name;

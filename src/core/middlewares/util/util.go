@@ -35,12 +35,15 @@ import (
 	"github.com/goharbor/harbor/src/common/dao"
 	"github.com/goharbor/harbor/src/common/models"
 	"github.com/goharbor/harbor/src/common/utils"
-	"github.com/goharbor/harbor/src/common/utils/clair"
 	"github.com/goharbor/harbor/src/common/utils/log"
 	"github.com/goharbor/harbor/src/core/config"
+	"github.com/goharbor/harbor/src/core/filter"
+	notifierEvt "github.com/goharbor/harbor/src/core/notifier/event"
 	"github.com/goharbor/harbor/src/core/promgr"
+	"github.com/goharbor/harbor/src/pkg/scan/vuln"
 	"github.com/goharbor/harbor/src/pkg/scan/whitelist"
-	"github.com/opencontainers/go-digest"
+	digest "github.com/opencontainers/go-digest"
+	"github.com/pkg/errors"
 )
 
 type contextKey string
@@ -48,6 +51,8 @@ type contextKey string
 const (
 	// ImageInfoCtxKey the context key for image information
 	ImageInfoCtxKey = contextKey("ImageInfo")
+	// ScannerPullCtxKey the context key for robot account to bypass the pull policy check.
+	ScannerPullCtxKey = contextKey("ScannerPullCheck")
 	// TokenUsername ...
 	// TODO: temp solution, remove after vmware/harbor#2242 is resolved.
 	TokenUsername = "harbor-core"
@@ -327,11 +332,13 @@ func CopyResp(rec *httptest.ResponseRecorder, rw http.ResponseWriter) {
 }
 
 // PolicyChecker checks the policy of a project by project name, to determine if it's needed to check the image's status under this project.
+// TODO: The policy check related things should be moved to pkg package later
+//  and refactored to include the `check` capabilities, not just property getters.
 type PolicyChecker interface {
 	// contentTrustEnabled returns whether a project has enabled content trust.
 	ContentTrustEnabled(name string) bool
 	// vulnerablePolicy  returns whether a project has enabled vulnerable, and the project's severity.
-	VulnerablePolicy(name string) (bool, models.Severity, models.CVEWhitelist)
+	VulnerablePolicy(name string) (bool, vuln.Severity, models.CVEWhitelist)
 }
 
 // PmsPolicyChecker ...
@@ -346,33 +353,43 @@ func (pc PmsPolicyChecker) ContentTrustEnabled(name string) bool {
 		log.Errorf("Unexpected error when getting the project, error: %v", err)
 		return true
 	}
+	if project == nil {
+		log.Debugf("project %s not found", name)
+		return false
+	}
 	return project.ContentTrustEnabled()
 }
 
 // VulnerablePolicy ...
-func (pc PmsPolicyChecker) VulnerablePolicy(name string) (bool, models.Severity, models.CVEWhitelist) {
+func (pc PmsPolicyChecker) VulnerablePolicy(name string) (bool, vuln.Severity, models.CVEWhitelist) {
 	project, err := pc.pm.Get(name)
 	wl := models.CVEWhitelist{}
 	if err != nil {
 		log.Errorf("Unexpected error when getting the project, error: %v", err)
-		return true, models.SevUnknown, wl
+		return true, vuln.Unknown, wl
 	}
+
 	mgr := whitelist.NewDefaultManager()
 	if project.ReuseSysCVEWhitelist() {
 		w, err := mgr.GetSys()
 		if err != nil {
-			return project.VulPrevented(), clair.ParseClairSev(project.Severity()), wl
+			log.Error(errors.Wrap(err, "policy checker: vulnerable policy"))
+		} else {
+			wl = *w
+
+			// Use the real project ID
+			wl.ProjectID = project.ProjectID
 		}
-		wl = *w
 	} else {
 		w, err := mgr.Get(project.ProjectID)
 		if err != nil {
-			return project.VulPrevented(), clair.ParseClairSev(project.Severity()), wl
+			log.Error(errors.Wrap(err, "policy checker: vulnerable policy"))
+		} else {
+			wl = *w
 		}
-		wl = *w
 	}
-	return project.VulPrevented(), clair.ParseClairSev(project.Severity()), wl
 
+	return project.VulPrevented(), vuln.ParseSeverityVersion3(project.Severity()), wl
 }
 
 // NewPMSPolicyChecker returns an instance of an pmsPolicyChecker
@@ -428,6 +445,17 @@ func ImageInfoFromContext(ctx context.Context) (*ImageInfo, bool) {
 // ManifestInfoFromContext returns manifest info from context
 func ManifestInfoFromContext(ctx context.Context) (*ManifestInfo, bool) {
 	info, ok := ctx.Value(manifestInfoKey).(*ManifestInfo)
+	return info, ok
+}
+
+// NewScannerPullContext returns context with policy check info
+func NewScannerPullContext(ctx context.Context, scannerPull bool) context.Context {
+	return context.WithValue(ctx, ScannerPullCtxKey, scannerPull)
+}
+
+// ScannerPullFromContext returns whether to bypass policy check
+func ScannerPullFromContext(ctx context.Context) (bool, bool) {
+	info, ok := ctx.Value(ScannerPullCtxKey).(bool)
 	return info, ok
 }
 
@@ -535,4 +563,47 @@ func ParseManifestInfoFromPath(req *http.Request) (*ManifestInfo, error) {
 	}
 
 	return info, nil
+}
+
+// FireQuotaEvent ...
+func FireQuotaEvent(req *http.Request, level int, msg string) {
+	go func() {
+		info, err := ParseManifestInfoFromReq(req)
+		if err != nil {
+			log.Errorf("Quota exceed event: failed to get manifest from request: %v", err)
+			return
+		}
+		pm, err := filter.GetProjectManager(req)
+		if err != nil {
+			log.Errorf("Quota exceed event: failed to get project manager: %v", err)
+			return
+		}
+		project, err := pm.Get(info.ProjectID)
+		if err != nil {
+			log.Errorf(fmt.Sprintf("Quota exceed event: failed to get the project %d", info.ProjectID), err)
+			return
+		}
+		if project == nil {
+			log.Errorf(fmt.Sprintf("Quota exceed event: no project found %d", info.ProjectID), err)
+			return
+		}
+
+		evt := &notifierEvt.Event{}
+		quotaMetadata := &notifierEvt.QuotaMetaData{
+			Project:  project,
+			Tag:      info.Tag,
+			Digest:   info.Digest,
+			RepoName: info.Repository,
+			Level:    level,
+			Msg:      msg,
+			OccurAt:  time.Now(),
+		}
+		if err := evt.Build(quotaMetadata); err == nil {
+			if err := evt.Publish(); err != nil {
+				log.Errorf("failed to publish quota event: %v", err)
+			}
+		} else {
+			log.Errorf("failed to build quota event metadata: %v", err)
+		}
+	}()
 }

@@ -73,7 +73,7 @@ type HTTPAuthProxy struct {
 	TokenReviewEndpoint string `json:"tokenreivew_endpoint"`
 	VerifyCert          bool   `json:"verify_cert"`
 	SkipSearch          bool   `json:"skip_search"`
-	CaseSensitive       bool   `json:"case_sensitive"`
+	ServerCertificate   string `json:"server_certificate"`
 }
 
 // OIDCSetting wraps the settings for OIDC auth endpoint
@@ -83,6 +83,7 @@ type OIDCSetting struct {
 	VerifyCert   bool     `json:"verify_cert"`
 	ClientID     string   `json:"client_id"`
 	ClientSecret string   `json:"client_secret"`
+	GroupsClaim  string   `json:"groups_claim"`
 	RedirectURL  string   `json:"redirect_url"`
 	Scope        []string `json:"scope"`
 }

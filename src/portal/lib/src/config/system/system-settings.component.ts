@@ -66,9 +66,9 @@ export class SystemSettingsComponent implements OnChanges, OnInit {
     @Input() hasCAFile: boolean = false;
     @Input() withAdmiral = false;
 
-    @ViewChild("systemConfigFrom") systemSettingsForm: NgForm;
-    @ViewChild("cfgConfirmationDialog") confirmationDlg: ConfirmationDialogComponent;
-    @ViewChild('dateInput') dateInput: ElementRef;
+    @ViewChild("systemConfigFrom", {static: false}) systemSettingsForm: NgForm;
+    @ViewChild("cfgConfirmationDialog", {static: false}) confirmationDlg: ConfirmationDialogComponent;
+    @ViewChild('dateInput', {static: false}) dateInput: ElementRef;
 
     get editable(): boolean {
         return this.systemSettings &&
@@ -266,11 +266,6 @@ export class SystemSettingsComponent implements OnChanges, OnInit {
             .subscribe(systemInfo => this.systemInfo = systemInfo
                 , error => this.errorHandler.error(error));
     }
-
-    get withClair(): boolean {
-        return this.systemInfo ? this.systemInfo.with_clair : false;
-    }
-
     getSystemWhitelist() {
         this.onGoing = true;
         this.systemInfoService.getSystemWhitelist()

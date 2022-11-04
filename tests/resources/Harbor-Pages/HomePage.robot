@@ -20,7 +20,7 @@ Resource  ../../resources/Util.robot
 
 *** Keywords ***
 Sign In Harbor
-    [Arguments]  ${url}  ${user}  ${pw}
+    [Arguments]  ${url}  ${user}  ${pw}  ${is_close_scan_plugin_mesg}=${false}
     Go To    ${url}
     Retry Wait Element  ${harbor_span_title}
     Retry Wait Element  ${login_name}
@@ -31,39 +31,29 @@ Sign In Harbor
     Retry Button Click  ${login_btn}
     Log To Console  ${user}
     Retry Wait Element  xpath=//span[contains(., '${user}')]
+    #Click Element If Visible  ${close_scan_plugin_mesg}
+    #Run Keyword If  ${is_close_scan_plugin_mesg}==${true}  Run Keyword And Ignore Error  Retry Element Click  ${close_scan_plugin_mesg}
 
 Capture Screenshot And Source
     Capture Page Screenshot
     Log Source
 
 Sign Up Should Not Display
-    Page Should Not Contain Element  xpath=${sign_up_button_xpath}
+    Retry Wait Until Page Not Contains Element  xpath=${sign_up_button_xpath}
 
 Create An New User
     [Arguments]  ${url}  ${username}  ${email}  ${realname}  ${newPassword}  ${comment}
     Go To    ${url}
-    Wait Until Element Is Visible  ${harbor_span_title}
-    Wait Until Element Is Visible  xpath=${sign_up_for_an_account_xpath}
-    Click Element  xpath=${sign_up_for_an_account_xpath}
-    Wait Until Element Is Visible  xpath=${username_xpath}
-    Input Text  xpath=${username_xpath}  ${username}
-    Wait Until Element Is Visible  xpath=${email_xpath}
-    Input Text  xpath=${email_xpath}  ${email}
-    Wait Until Element Is Visible  xpath=${realname_xpath}
-    Input Text  xpath=${realname_xpath}  ${realname}
-    Wait Until Element Is Visible  xpath=${newPassword_xpath}
-    Input Text  xpath=${newPassword_xpath}  ${newPassword}
-    Wait Until Element Is Visible  xpath=${confirmPassword_xpath}
-    Input Text  xpath=${confirmPassword_xpath}  ${newPassword}
-    Wait Until Element Is Visible  xpath=${comment_xpath}
-    Input Text  xpath=${comment_xpath}  ${comment}
-    Wait Until Element Is Visible  xpath=${signup_xpath}
-    Click button  xpath=${signup_xpath}
-    Sleep  2
-    Wait Until Element Is Visible  ${login_name}
-    Input Text  ${login_name}  ${username}
-    Wait Until Element Is Visible  ${login_pwd}
-    Input Text  ${login_pwd}  ${newPassword}
-    Wait Until Element Is Visible  ${login_btn}
-    Click button  ${login_btn}
-    Wait Until Element Is Visible  xpath=//span[contains(., '${username}')]
+    Retry Wait Element  ${harbor_span_title}
+    Retry Element Click  xpath=${sign_up_for_an_account_xpath}
+    Retry Text Input  xpath=${username_xpath}  ${username}
+    Retry Text Input  xpath=${email_xpath}  ${email}
+    Retry Text Input  xpath=${realname_xpath}  ${realname}
+    Retry Text Input  xpath=${newPassword_xpath}  ${newPassword}
+    Retry Text Input  xpath=${confirmPassword_xpath}  ${newPassword}
+    Retry Text Input  xpath=${comment_xpath}  ${comment}
+    Retry Double Keywords When Error  Retry Element Click  ${signup_xpath}  Retry Wait Until Page Not Contains Element  ${signup_xpath}
+    Retry Text Input  ${login_name}  ${username}
+    Retry Text Input  ${login_pwd}  ${newPassword}
+    Retry Double Keywords When Error  Retry Element Click  ${login_btn}  Retry Wait Until Page Not Contains Element  ${login_btn}
+    Retry Wait Element  xpath=//span[contains(., '${username}')]

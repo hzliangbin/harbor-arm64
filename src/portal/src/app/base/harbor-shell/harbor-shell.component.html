@@ -1,6 +1,19 @@
 <clr-main-container>
-    <global-message [isAppLevel]="true"></global-message>
-    <navigator (showAccountSettingsModal)="openModal($event)" (showPwdChangeModal)="openModal($event)"></navigator>
+    <div class="clr-row scanner-info" *ngIf="showScannerInfo && isSystemAdmin ">
+        <div class="clr-col-2"></div>
+        <div class="clr-col text-center">
+            <clr-icon shape="info-standard" size="20"></clr-icon>
+            <span class="ml-05">{{'SCANNER.HELP_INFO_1' | translate }}
+                <a target="_blank" href="{{scannerDocUrl}}">{{'SCANNER.HELP_INFO_2' | translate }}</a>
+            </span>
+        </div>
+        <div class="clr-col-2 right">
+            <a class="all-scanners" href="#" routerLink="/harbor/interrogation-services/scanners">{{'SCANNER.ALL_SCANNERS' | translate }}</a>
+            <clr-icon (click)="closeInfo()" class="close-icon" shape="times" size="24"></clr-icon>
+        </div>
+    </div>
+    <global-message  [isAppLevel]="true"></global-message>
+    <navigator (showAccountSettingsModal)="openModal($event)" (showDialogModalAction)="openModal($event)"></navigator>
     <div class="content-container">
         <div class="content-area" [class.container-override]="showSearch"
              [class.content-area-override]="!shouldOverrideContent"
@@ -29,7 +42,7 @@
                             <clr-icon shape="users" clrVerticalNavIcon></clr-icon>
                             {{'SIDE_NAV.SYSTEM_MGMT.USER' | translate}}
                         </a>
-                        <a *ngIf='isLdapMode || isHttpAuthMode' clrVerticalNavLink routerLink="/harbor/groups" routerLinkActive="active">
+                        <a *ngIf='isLdapMode || isHttpAuthMode || isOidcMode' clrVerticalNavLink routerLink="/harbor/groups" routerLinkActive="active">
                             <clr-icon shape="users" clrVerticalNavIcon></clr-icon>
                             {{'SIDE_NAV.SYSTEM_MGMT.GROUP' | translate}}
                         </a>
@@ -41,26 +54,28 @@
                             <clr-icon shape="cloud-traffic" clrVerticalNavIcon></clr-icon>
                             {{'SIDE_NAV.SYSTEM_MGMT.REPLICATION' | translate}}
                         </a>
-                    </clr-vertical-nav-group-children>
-                </clr-vertical-nav-group>
-                <clr-vertical-nav-group *ngIf="isSystemAdmin && (withClair || hasAdminRole)" routerLinkActive="active">
-                    <clr-icon shape="event" clrVerticalNavIcon></clr-icon>
-                    {{'SIDE_NAV.TASKS' | translate}}
-                    <a routerLink="#" hidden aria-hidden="true"></a>
-                    <clr-vertical-nav-group-children *clrIfExpanded="true">
-                        <a clrVerticalNavLink *ngIf="withClair" routerLink="/harbor/vulnerability"
-                           routerLinkActive="active">
-                            {{'SIDE_NAV.SYSTEM_MGMT.VULNERABILITY' | translate}}
+                        <a *ngIf="!withAdmiral" clrVerticalNavLink routerLink="/harbor/labels" routerLinkActive="active">
+                            <clr-icon shape="tag" clrVerticalNavIcon></clr-icon>
+                            {{'CONFIG.LABEL' | translate }}
+                        </a>
+                        <a clrVerticalNavLink routerLink="/harbor/project-quotas" routerLinkActive="active">
+                            <clr-icon shape="volume" clrVerticalNavIcon></clr-icon>
+                            {{'CONFIG.PROJECT_QUOTAS' | translate }}
+                        </a>
+                        <a clrVerticalNavLink routerLink="/harbor/interrogation-services" routerLinkActive="active">
+                            <clr-icon shape="shield" clrVerticalNavIcon></clr-icon>
+                            {{'SIDE_NAV.SYSTEM_MGMT.INTERROGATION_SERVICES' | translate}}
                         </a>
                         <a clrVerticalNavLink *ngIf="hasAdminRole" routerLink="/harbor/gc" routerLinkActive="active">
+                            <clr-icon shape="trash" clrVerticalNavIcon></clr-icon>
                             {{'SIDE_NAV.SYSTEM_MGMT.GARBAGE_COLLECTION' | translate}}
+                        </a>
+                        <a clrVerticalNavLink routerLinkActive="active" routerLink="/harbor/configs">
+                            <clr-icon shape="cog" clrVerticalNavIcon></clr-icon>
+                            {{'SIDE_NAV.SYSTEM_MGMT.CONFIG' | translate}}
                         </a>
                     </clr-vertical-nav-group-children>
                 </clr-vertical-nav-group>
-                <a *ngIf="isSystemAdmin" clrVerticalNavLink routerLinkActive="active" routerLink="/harbor/configs">
-                    <clr-icon shape="cog" clrVerticalNavIcon></clr-icon>
-                    {{'SIDE_NAV.SYSTEM_MGMT.CONFIG' | translate}}
-                </a>
             </div>
             <div class="vertical-nav-footer">
                 <a clrVerticalNavLink target="_blank" routerLink="/devcenter">

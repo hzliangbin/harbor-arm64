@@ -22,14 +22,14 @@ Resource  ../../resources/Util.robot
 Delete Success
     [Arguments]  @{obj}
     :For  ${obj}  in  @{obj}
-    \    Retry Wait Until Page Contains Element  //clr-tab-content//div[contains(.,'${obj}')]/../div/clr-icon[@shape='success-standard']
+    \    Retry Wait Until Page Contains Element  //*[@id='contentAll']//div[contains(.,'${obj}')]/../div/clr-icon[@shape='success-standard']
     Sleep  1
     Capture Page Screenshot
 
 Delete Fail
     [Arguments]  @{obj}
     :For  ${obj}  in  @{obj}
-    \    Retry Wait Until Page Contains Element  //clr-tab-content//div[contains(.,'${obj}')]/../div/clr-icon[@shape='error-standard']
+    \    Retry Wait Until Page Contains Element  //*[@id='contentAll']//div[contains(.,'${obj}')]/../div/clr-icon[@shape='error-standard']
     Sleep  1
     Capture Page Screenshot
 
@@ -39,8 +39,16 @@ Filter Object
     Retry Element Click  xpath=//hbr-filter//clr-icon
     ${element}=  Set Variable  xpath=//hbr-filter//input
     Wait Until Element Is Visible And Enabled  ${element}
-    Input Text   ${element}  ${kw}
+    Retry Clear Element Text  ${element}
+    Retry Text Input   ${element}  ${kw}
     Sleep  3
+
+Filter Project
+#Filter project repo user tag.
+    [Arguments]    ${kw}
+    Retry Element Click  ${log_xpath} 
+    Retry Element Click  ${projects_xpath}
+    Filter Object  ${kw}
 
 Select Object
 #select single element such as user project repo tag
@@ -66,16 +74,18 @@ Multi-delete Object
 Multi-delete User
     [Arguments]    @{obj}
     :For  ${obj}  in  @{obj}
+    \    Sleep  1
     \    Retry Element Click  //clr-dg-row[contains(.,'${obj}')]//label
     Retry Element Click  ${member_action_xpath}
-    Retry Element Click  //clr-dropdown/clr-dropdown-menu/button[2]
+    Retry Element Click  //*[@id='deleteUser']
     Retry Double Keywords When Error  Retry Element Click  ${delete_btn}  Retry Wait Until Page Not Contains Element  ${delete_btn}
 
 
 Multi-delete Member
     [Arguments]    @{obj}
     :For  ${obj}  in  @{obj}
-    \    Retry Element Click  //clr-dg-row[contains(.,'${obj}')]//clr-checkbox-wrapper
+    \    Sleep  1
+    \    Retry Element Click  //clr-dg-row[contains(.,'${obj}')]//clr-checkbox-wrapper/label
     Retry Double Keywords When Error  Retry Element Click  ${member_action_xpath}  Retry Wait Until Page Contains Element  ${delete_action_xpath}
     Retry Double Keywords When Error  Retry Element Click  ${delete_action_xpath}  Retry Wait Until Page Contains Element  ${delete_btn}
     Retry Double Keywords When Error  Retry Element Click  ${delete_btn}  Retry Wait Until Page Not Contains Element  ${delete_btn}

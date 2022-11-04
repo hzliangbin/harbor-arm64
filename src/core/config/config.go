@@ -20,7 +20,6 @@ package config
 import (
 	"crypto/tls"
 	"crypto/x509"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -389,23 +388,17 @@ func ClairDB() (*models.PostGreSQL, error) {
 	return clairDB, nil
 }
 
+// ClairAdapterEndpoint returns the endpoint of clair adapter instance, by default it's the one deployed within Harbor.
+func ClairAdapterEndpoint() string {
+	return cfgMgr.Get(common.ClairAdapterURL).GetString()
+}
+
 // AdmiralEndpoint returns the URL of admiral, if Harbor is not deployed with admiral it should return an empty string.
 func AdmiralEndpoint() string {
 	if cfgMgr.Get(common.AdmiralEndpoint).GetString() == "NA" {
 		return ""
 	}
 	return cfgMgr.Get(common.AdmiralEndpoint).GetString()
-}
-
-// ScanAllPolicy returns the policy which controls the scan all.
-func ScanAllPolicy() models.ScanAllPolicy {
-	var res models.ScanAllPolicy
-	log.Infof("Scan all policy %v", cfgMgr.Get(common.ScanAllPolicy).GetString())
-	if err := json.Unmarshal([]byte(cfgMgr.Get(common.ScanAllPolicy).GetString()), &res); err != nil {
-		log.Errorf("Failed to unmarshal the value in configuration for Scan All policy, error: %v, returning the default policy", err)
-		return models.DefaultScanAllPolicy
-	}
-	return res
 }
 
 // WithAdmiral returns a bool to indicate if Harbor's deployed with admiral.
@@ -471,16 +464,6 @@ func GetRegistryCtlURL() string {
 	return url
 }
 
-// GetClairHealthCheckServerURL returns the URL of
-// the health check server of Clair
-func GetClairHealthCheckServerURL() string {
-	url := os.Getenv("CLAIR_HEALTH_CHECK_SERVER_URL")
-	if len(url) == 0 {
-		return common.DefaultClairHealthCheckServerURL
-	}
-	return url
-}
-
 // HTTPAuthProxySetting returns the setting of HTTP Auth proxy.  the settings are only meaningful when the auth_mode is
 // set to http_auth
 func HTTPAuthProxySetting() (*models.HTTPAuthProxy, error) {
@@ -492,7 +475,7 @@ func HTTPAuthProxySetting() (*models.HTTPAuthProxy, error) {
 		TokenReviewEndpoint: cfgMgr.Get(common.HTTPAuthProxyTokenReviewEndpoint).GetString(),
 		VerifyCert:          cfgMgr.Get(common.HTTPAuthProxyVerifyCert).GetBool(),
 		SkipSearch:          cfgMgr.Get(common.HTTPAuthProxySkipSearch).GetBool(),
-		CaseSensitive:       cfgMgr.Get(common.HTTPAuthProxyCaseSensitive).GetBool(),
+		ServerCertificate:   cfgMgr.Get(common.HTTPAuthProxyServerCertificate).GetString(),
 	}, nil
 }
 
@@ -515,6 +498,7 @@ func OIDCSetting() (*models.OIDCSetting, error) {
 		VerifyCert:   cfgMgr.Get(common.OIDCVerifyCert).GetBool(),
 		ClientID:     cfgMgr.Get(common.OIDCCLientID).GetString(),
 		ClientSecret: cfgMgr.Get(common.OIDCClientSecret).GetString(),
+		GroupsClaim:  cfgMgr.Get(common.OIDCGroupsClaim).GetString(),
 		RedirectURL:  extEndpoint + common.OIDCCallbackPath,
 		Scope:        scope,
 	}, nil

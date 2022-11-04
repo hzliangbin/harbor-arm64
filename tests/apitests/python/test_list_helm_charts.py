@@ -4,6 +4,7 @@ import unittest
 
 from testutils import ADMIN_CLIENT
 from testutils import TEARDOWN
+import base
 from library.user import User
 from library.project import Project
 from library.chart import Chart
@@ -11,18 +12,13 @@ from library.chart import Chart
 class TestProjects(unittest.TestCase):
     @classmethod
     def setUp(self):
-        chart = Chart()
-        self.chart= chart
-
-        project = Project()
-        self.project= project
-
-        user = User()
-        self.user= user
+        self.chart= Chart()
+        self.project= Project()
+        self.user= User()
 
     @classmethod
     def tearDown(self):
-        print "Case completed"
+        print("Case completed")
 
     @unittest.skipIf(TEARDOWN == False, "Test data won't be erased.")
     def test_ClearData(self):
@@ -54,6 +50,7 @@ class TestProjects(unittest.TestCase):
         user_chart_password = "Aa123456"
         TestProjects.CHART_NAME = 'mariadb'
         TestProjects.VERSION = '4.3.1'
+        base.run_command( ["curl", r"-o", "./tests/apitests/python/mariadb-4.3.1.tgz", "https://storage.googleapis.com/harbor-builds/bin/charts/mariadb-4.3.1.tgz"])
 
         #1. Create a new user(UA);
         TestProjects.user_chart_id, user_chart_name = self.user.create_user(user_password = user_chart_password, **ADMIN_CLIENT)

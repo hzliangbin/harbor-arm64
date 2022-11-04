@@ -18,7 +18,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/astaxie/beego"
+	"github.com/beego/beego"
 	"github.com/goharbor/harbor/src/common/utils/log"
 )
 
@@ -27,9 +27,16 @@ type Handler struct {
 	beego.Controller
 }
 
+// Prepare disables xsrf for /service/token endpoint.
+// This is done on purpose b/c containerd will try to send POST and fallback to GET
+// more details see #10305
+func (h *Handler) Prepare() {
+	h.EnableXSRF = false
+}
+
 // Get handles GET request, it checks the http header for user credentials
 // and parse service and scope based on docker registry v2 standard,
-// checkes the permission against local DB and generates jwt token.
+// checks the permission against local DB and generates jwt token.
 func (h *Handler) Get() {
 	request := h.Ctx.Request
 	log.Debugf("URL for token request: %s", request.URL.String())

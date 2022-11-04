@@ -123,7 +123,6 @@ export const CONFIG_AUTH_MODE = {
   OIDC_AUTH: "oidc_auth",
   UAA_AUTH: "uaa_auth",
   DB_AUTH: "db_auth",
-
 };
 export const QUOTA_DANGER_COEFFICIENT = 0.9;
 export const QUOTA_WARNING_COEFFICIENT = 0.7;
@@ -147,11 +146,17 @@ export const PROJECT_ROOTS = [
     NAME: "guest",
     VALUE: 3,
     LABEL: "GROUP.GUEST"
+  },
+  {
+    NAME: "limited",
+    VALUE: 5,
+    LABEL: "GROUP.LIMITED_GUEST"
   }
 ];
 
 export enum GroupType {
   LDAP_TYPE = 1,
-  HTTP_TYPE = 2
+  HTTP_TYPE = 2,
+  OIDC_TYPE = 3
 }
 export const REFRESH_TIME_DIFFERENCE = 10000;

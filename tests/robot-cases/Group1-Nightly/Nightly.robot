@@ -1,16 +1,16 @@
-// Copyright (c) 2017 VMware, Inc. All Rights Reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//    http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+# Copyright Project Harbor Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#	http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License
 
 *** Settings ***
 Documentation  Harbor BATs
@@ -28,20 +28,17 @@ ${HARBOR_ADMIN}  admin
 Test Case - Get Harbor Version
 #Just get harbor version and log it
     Get Harbor Version
-
-Test Case - Vulnerability Data Not Ready
-#This case must run before vulnerability db ready
+Test Case - Clair Is Default Scanner And It Is immutable
     Init Chrome Driver
     Sign In Harbor  ${HARBOR_URL}  ${HARBOR_ADMIN}  ${HARBOR_PASSWORD}
-    Go Into Project  library  has_image=${false}
-    Vulnerability Not Ready Project Hint
-    Switch To Vulnerability Page
-    Vulnerability Not Ready Config Hint
+    Switch To Scanners Page
+    Should Display The Default Clair Scanner
+    Clair Is Immutable Scanner
 
 Test Case - Read Only Mode
     Init Chrome Driver
     ${d}=   Get Current Date    result_format=%m%s
-    Create An New Project With New User  url=${HARBOR_URL}  username=tester${d}  email=tester${d}@vmware.com  realname=tester${d}  newPassword=Test1@34  comment=harbor  projectname=project${d}  public=true
+    Create An New Project With New User  url=${HARBOR_URL}  username=tester${d}  email=tester${d}@harbortest.com  realname=tester${d}  newPassword=Test1@34  comment=harbor  projectname=project${d}  public=true
 
     Enable Read Only
     Cannot Push image  ${ip}  tester${d}  Test1@34  project${d}  busybox:latest
@@ -97,7 +94,7 @@ Test Case - Staticsinfo
 Test Case - Create An New User
     Init Chrome Driver
     ${d}=    Get Current Date    result_format=%m%s
-    Create An New User  url=${HARBOR_URL}  username=tester${d}  email=tester${d}@vmware.com  realname=harbortest  newPassword=Test1@34  comment=harbortest
+    Create An New User  url=${HARBOR_URL}  username=tester${d}  email=tester${d}@harbortest.com  realname=harbortest  newPassword=Test1@34  comment=harbortest
     Close Browser
 
 Test Case - Sign With Admin
@@ -108,14 +105,14 @@ Test Case - Sign With Admin
 Test Case - Update User Comment
     Init Chrome Driver
     ${d}=    Get Current Date    result_format=%m%s
-    Create An New User  url=${HARBOR_URL}  username=tester${d}  email=tester${d}@vmware.com  realname=harbortest  newPassword=Test1@34  comment=harbortest
+    Create An New User  url=${HARBOR_URL}  username=tester${d}  email=tester${d}@harbortest.com  realname=harbortest  newPassword=Test1@34  comment=harbortest
     Update User Comment  Test12#4
     Logout Harbor
 
 Test Case - Update Password
     Init Chrome Driver
     ${d}=    Get Current Date    result_format=%m%s
-    Create An New User  url=${HARBOR_URL}  username=tester${d}  email=tester${d}@vmware.com  realname=harbortest  newPassword=Test1@34  comment=harbortest
+    Create An New User  url=${HARBOR_URL}  username=tester${d}  email=tester${d}@harbortest.com  realname=harbortest  newPassword=Test1@34  comment=harbortest
     Change Password  Test1@34  Test12#4
     Logout Harbor
     Sign In Harbor  ${HARBOR_URL}  tester${d}  Test12#4
@@ -124,14 +121,14 @@ Test Case - Update Password
 Test Case - Create An New Project
     Init Chrome Driver
     ${d}=    Get Current Date    result_format=%m%s
-    Create An New User  url=${HARBOR_URL}  username=tester${d}  email=tester${d}@vmware.com  realname=harbortest  newPassword=Test1@34  comment=harbortest
+    Create An New User  url=${HARBOR_URL}  username=tester${d}  email=tester${d}@harbortest.com  realname=harbortest  newPassword=Test1@34  comment=harbortest
     Create An New Project  test${d}
     Close Browser
 
 Test Case - User View Projects
     Init Chrome Driver
     ${d}=    Get Current Date    result_format=%m%s
-    Create An New User  url=${HARBOR_URL}  username=tester${d}  email=tester${d}@vmware.com  realname=harbortest  newPassword=Test1@34  comment=harbortest
+    Create An New User  url=${HARBOR_URL}  username=tester${d}  email=tester${d}@harbortest.com  realname=harbortest  newPassword=Test1@34  comment=harbortest
     Create An New Project  test${d}1
     Create An New Project  test${d}2
     Create An New Project  test${d}3
@@ -145,7 +142,7 @@ Test Case - User View Projects
 Test Case - Push Image
     Init Chrome Driver
     ${d}=    Get Current Date    result_format=%m%s
-    Create An New User  url=${HARBOR_URL}  username=tester${d}  email=tester${d}@vmware.com  realname=harbortest  newPassword=Test1@34  comment=harbortest
+    Create An New User  url=${HARBOR_URL}  username=tester${d}  email=tester${d}@harbortest.com  realname=harbortest  newPassword=Test1@34  comment=harbortest
     Create An New Project  test${d}
 
     Push image  ${ip}  tester${d}  Test1@34  test${d}  hello-world:latest
@@ -156,7 +153,7 @@ Test Case - User View Logs
     Init Chrome Driver
     ${d}=   Get Current Date    result_format=%m%s
 
-    Create An New Project With New User  url=${HARBOR_URL}  username=tester${d}  email=tester${d}@vmware.com  realname=tester${d}  newPassword=Test1@34  comment=harbor  projectname=project${d}  public=true
+    Create An New Project With New User  url=${HARBOR_URL}  username=tester${d}  email=tester${d}@harbortest.com  realname=tester${d}  newPassword=Test1@34  comment=harbor  projectname=project${d}  public=true
 
     Push image  ${ip}  tester${d}  Test1@34  project${d}  busybox:latest
     Pull image  ${ip}  tester${d}  Test1@34  project${d}  busybox:latest
@@ -174,9 +171,9 @@ Test Case - Manage project publicity
     Init Chrome Driver
     ${d}=    Get Current Date  result_format=%m%s
 
-    Create An New User  url=${HARBOR_URL}  username=usera${d}  email=usera${d}@vmware.com  realname=usera${d}  newPassword=Test1@34  comment=harbor
+    Create An New User  url=${HARBOR_URL}  username=usera${d}  email=usera${d}@harbortest.com  realname=usera${d}  newPassword=Test1@34  comment=harbor
     Logout Harbor
-    Create An New User  url=${HARBOR_URL}  username=userb${d}  email=userb${d}@vmware.com  realname=userb${d}  newPassword=Test1@34  comment=harbor
+    Create An New User  url=${HARBOR_URL}  username=userb${d}  email=userb${d}@harbortest.com  realname=userb${d}  newPassword=Test1@34  comment=harbor
     Logout Harbor
 
     Sign In Harbor  ${HARBOR_URL}  usera${d}  Test1@34
@@ -247,7 +244,7 @@ Test Case - Edit Project Creation
     # Create normal user and login
     Init Chrome Driver
     ${d}=    Get Current Date    result_format=%m%s
-    Create An New User  url=${HARBOR_URL}  username=tester${d}  email=tester${d}@vmware.com  realname=harbortest  newPassword=Test1@34  comment=harbortest
+    Create An New User  url=${HARBOR_URL}  username=tester${d}  email=tester${d}@harbortest.com  realname=harbortest  newPassword=Test1@34  comment=harbortest
 
     Project Creation Should Display
     Logout Harbor
@@ -345,7 +342,7 @@ Test Case - Delete Label
 TestCase - Project Admin Operate Labels
     Init Chrome Driver
     ${d}=   Get Current Date    result_format=%m%s
-    Create An New Project With New User  url=${HARBOR_URL}  username=test${d}  email=test${d}@vmware.com  realname=test${d}  newPassword=Test1@34  comment=harbor  projectname=project${d}  public=false
+    Create An New Project With New User  url=${HARBOR_URL}  username=test${d}  email=test${d}@harbortest.com  realname=test${d}  newPassword=Test1@34  comment=harbor  projectname=project${d}  public=false
 
     Go Into Project  project${d}  has_image=${false}
     Sleep  2
@@ -361,7 +358,7 @@ TestCase - Project Admin Operate Labels
 TestCase - Project Admin Add Labels To Repo
     Init Chrome Driver
     ${d}=   Get Current Date    result_format=%m%s
-    Create An New Project With New User  url=${HARBOR_URL}  username=test${d}  email=test${d}@vmware.com  realname=test${d}  newPassword=Test1@34  comment=harbor  projectname=project${d}  public=false
+    Create An New Project With New User  url=${HARBOR_URL}  username=test${d}  email=test${d}@harbortest.com  realname=test${d}  newPassword=Test1@34  comment=harbor  projectname=project${d}  public=false
     ## Push Image With Tag  ${ip}  test${d}  Test1@34  project${d}  vmware/photon  1.0  1.0
     Push Image With Tag  ${ip}  test${d}  Test1@34  project${d}  redis  3.2.10-alpine  3.2.10-alpine
     Push Image With Tag  ${ip}  test${d}  Test1@34  project${d}  redis  4.0.7-alpine  4.0.7-alpine
@@ -385,9 +382,9 @@ TestCase - Project Admin Add Labels To Repo
 TestCase - Developer Operate Labels
     Init Chrome Driver
     ${d}=   Get Current Date    result_format=%m%s
-    Create An New Project With New User  url=${HARBOR_URL}  username=test${d}  email=test${d}@vmware.com  realname=test${d}  newPassword=Test1@34  comment=harbor  projectname=project${d}  public=false
+    Create An New Project With New User  url=${HARBOR_URL}  username=test${d}  email=test${d}@harbortest.com  realname=test${d}  newPassword=Test1@34  comment=harbor  projectname=project${d}  public=false
     Logout Harbor
-    Create An New User  url=${HARBOR_URL}  username=bob${d}  email=bob${d}@vmware.com  realname=bob${d}  newPassword=Test1@34  comment=habor
+    Create An New User  url=${HARBOR_URL}  username=bob${d}  email=bob${d}@harbortest.com  realname=bob${d}  newPassword=Test1@34  comment=habor
     Logout Harbor
 
     Manage Project Member  test${d}  Test1@34  project${d}  bob${d}  Add  has_image=${false}
@@ -396,13 +393,13 @@ TestCase - Developer Operate Labels
     Sign In Harbor  ${HARBOR_URL}  bob${d}  Test1@34
     Go Into Project  project${d}  has_image=${false}
     Sleep  3
-    Page Should Not Contain Element  xpath=//a[contains(.,'Labels')]
+    Retry Wait Until Page Not Contains Element  xpath=//a[contains(.,'Labels')]
     Close Browser
 
 Test Case - Scan A Tag In The Repo
     Init Chrome Driver
     ${d}=  get current date  result_format=%m%s
-    Create An New Project With New User  url=${HARBOR_URL}  username=tester${d}  email=tester${d}@vmware.com  realname=tester${d}  newPassword=Test1@34  comment=harbor  projectname=project${d}  public=false
+    Create An New Project With New User  url=${HARBOR_URL}  username=tester${d}  email=tester${d}@harbortest.com  realname=tester${d}  newPassword=Test1@34  comment=harbor  projectname=project${d}  public=false
     Push Image  ${ip}  tester${d}  Test1@34  project${d}  hello-world
     Go Into Project  project${d}
     Go Into Repo  project${d}/hello-world
@@ -416,7 +413,7 @@ Test Case - Scan As An Unprivileged User
     Init Chrome Driver
     ${d}=    get current date    result_format=%m%s
     Push Image  ${ip}  ${HARBOR_ADMIN}  ${HARBOR_PASSWORD}  library  hello-world
-    Create An New User  ${HARBOR_URL}  user${d}  user${d}@vmware.com  user${d}  Test1@34  harbor
+    Create An New User  ${HARBOR_URL}  user${d}  user${d}@harbortest.com  user${d}  Test1@34  harbor
     Go Into Project  library
     Go Into Repo  hello-world
     Select Object  latest
@@ -431,7 +428,7 @@ Test Case - Scan Image With Empty Vul
     Go Into Repo  hello-world
     Scan Repo  latest  Succeed
     Move To Summary Chart
-    Wait Until Page Contains  Unknow
+    Wait Until Page Contains  No vulnerability
     Close Browser
 ###
 Test Case - Disable Scan Schedule
@@ -450,7 +447,7 @@ Test Case - Manual Scan All
     Push Image  ${ip}  ${HARBOR_ADMIN}  ${HARBOR_PASSWORD}  library  redis
     Sign In Harbor  ${HARBOR_URL}  ${HARBOR_ADMIN}  ${HARBOR_PASSWORD}
     Switch To Vulnerability Page
-    Trigger Scan Now
+    Trigger Scan Now And Wait Until The Result Appears
     Navigate To Projects
     Go Into Project  library
     Go Into Repo  redis
@@ -480,7 +477,7 @@ Test Case - Verify Download Ca Link
 Test Case - Edit Repo Info
     Init Chrome Driver
     ${d}=  Get Current Date  result_format=%m%s
-    Create An New Project With New User  url=${HARBOR_URL}  username=tester${d}  email=tester${d}@vmware.com  realname=tester${d}  newPassword=Test1@34  comment=harbor  projectname=project${d}  public=false
+    Create An New Project With New User  url=${HARBOR_URL}  username=tester${d}  email=tester${d}@harbortest.com  realname=tester${d}  newPassword=Test1@34  comment=harbor  projectname=project${d}  public=false
     Push Image  ${ip}  tester${d}  Test1@34  project${d}  hello-world
     Go Into Project  project${d}
     Go Into Repo  project${d}/hello-world
@@ -491,12 +488,12 @@ Test Case - Manage Project Member
     Init Chrome Driver
     ${d}=    Get current Date  result_format=%m%s
 
-    Create An New Project With New User  url=${HARBOR_URL}  username=alice${d}  email=alice${d}@vmware.com  realname=alice${d}  newPassword=Test1@34  comment=harbor  projectname=project${d}  public=false
+    Create An New Project With New User  url=${HARBOR_URL}  username=alice${d}  email=alice${d}@harbortest.com  realname=alice${d}  newPassword=Test1@34  comment=harbor  projectname=project${d}  public=false
     Push image  ip=${ip}  user=alice${d}  pwd=Test1@34  project=project${d}  image=hello-world
     Logout Harbor
-    Create An New User  url=${HARBOR_URL}  username=bob${d}  email=bob${d}@vmware.com  realname=bob${d}  newPassword=Test1@34  comment=habor
+    Create An New User  url=${HARBOR_URL}  username=bob${d}  email=bob${d}@harbortest.com  realname=bob${d}  newPassword=Test1@34  comment=habor
     Logout Harbor
-    Create An New User  url=${HARBOR_URL}  username=carol${d}  email=carol${d}@vmware.com  realname=carol${d}  newPassword=Test1@34  comment=harbor
+    Create An New User  url=${HARBOR_URL}  username=carol${d}  email=carol${d}@harbortest.com  realname=carol${d}  newPassword=Test1@34  comment=harbor
     Logout Harbor
 
     User Should Not Be A Member Of Project  bob${d}  Test1@34  project${d}
@@ -515,7 +512,7 @@ Test Case - Manage Project Member
 Test Case - Delete A Project
     Init Chrome Driver
     ${d}=    Get Current Date    result_format=%m%s
-    Create An New Project With New User  ${HARBOR_URL}  tester${d}  tester${d}@vmware.com  tester${d}  Test1@34  harobr  project${d}  false
+    Create An New Project With New User  ${HARBOR_URL}  tester${d}  tester${d}@harbortest.com  tester${d}  Test1@34  harobr  project${d}  false
     Push Image  ${ip}  tester${d}  Test1@34  project${d}  hello-world
     Project Should Not Be Deleted  project${d}
     Go Into Project  project${d}
@@ -527,7 +524,7 @@ Test Case - Delete A Project
 Test Case - Delete Multi Project
     Init Chrome Driver
     ${d}=    Get Current Date    result_format=%m%s
-    Create An New User  ${HARBOR_URL}  test${d}  test${d}@vmware.com  test${d}  Test1@34  harbor
+    Create An New User  ${HARBOR_URL}  test${d}  test${d}@harbortest.com  test${d}  Test1@34  harbor
     Create An New Project  projecta${d}
     Create An New Project  projectb${d}
     Push Image  ${ip}  test${d}  Test1@34  projecta${d}  hello-world
@@ -542,11 +539,11 @@ Test Case - Delete Multi Project
 Test Case - Delete Multi User
     Init Chrome Driver
     ${d}=   Get Current Date    result_format=%m%s
-    Create An New User  ${HARBOR_URL}  deletea${d}  testa${d}@vmware.com  test${d}  Test1@34  harbor
+    Create An New User  ${HARBOR_URL}  deletea${d}  testa${d}@harbortest.com  test${d}  Test1@34  harbor
     Logout Harbor
-    Create An New User  ${HARBOR_URL}  deleteb${d}  testb${d}@vmware.com  test${d}  Test1@34  harbor
+    Create An New User  ${HARBOR_URL}  deleteb${d}  testb${d}@harbortest.com  test${d}  Test1@34  harbor
     Logout Harbor
-    Create An New User  ${HARBOR_URL}  deletec${d}  testc${d}@vmware.com  test${d}  Test1@34  harbor
+    Create An New User  ${HARBOR_URL}  deletec${d}  testc${d}@harbortest.com  test${d}  Test1@34  harbor
     Logout Harbor
     Sign In Harbor  ${HARBOR_URL}  admin  Harbor12345
     Switch To User Tag
@@ -561,7 +558,7 @@ Test Case - Delete Multi User
 Test Case - Delete Multi Repo
     Init Chrome Driver
     ${d}=   Get Current Date    result_format=%m%s
-    Create An New User  ${HARBOR_URL}  test${d}  test${d}@vmware.com  test${d}  Test1@34  harbor
+    Create An New User  ${HARBOR_URL}  test${d}  test${d}@harbortest.com  test${d}  Test1@34  harbor
     Create An New Project  project${d}
     Push Image  ${ip}  test${d}  Test1@34  project${d}  hello-world
     Push Image  ${ip}  test${d}  Test1@34  project${d}  busybox
@@ -576,7 +573,7 @@ Test Case - Delete Multi Repo
 Test Case - Delete Multi Tag
     Init Chrome Driver
     ${d}=   Get Current Date    result_format=%m%s
-    Create An New User  ${HARBOR_URL}  test${d}  test${d}@vmware.com  test${d}  Test1@34  harbor
+    Create An New User  ${HARBOR_URL}  test${d}  test${d}@harbortest.com  test${d}  Test1@34  harbor
     Create An New Project  project${d}
     Push Image With Tag  ${ip}  test${d}  Test1@34  project${d}  redis  3.2.10-alpine  3.2.10-alpine
     Push Image With Tag  ${ip}  test${d}  Test1@34  project${d}  redis  4.0.7-alpine  4.0.7-alpine
@@ -592,7 +589,7 @@ Test Case - Delete Multi Tag
 Test Case - Delete Repo on CardView
     Init Chrome Driver
     ${d}=   Get Current Date  result_format=%m%s
-    Create An New User  ${HARBOR_URL}  test${d}  test${d}@vmware.com  test${d}  Test1@34  harbor
+    Create An New User  ${HARBOR_URL}  test${d}  test${d}@harbortest.com  test${d}  Test1@34  harbor
     Create An New Project  project${d}
     Push Image  ${ip}  test${d}  Test1@34  project${d}  hello-world
     Push Image  ${ip}  test${d}  Test1@34  project${d}  busybox
@@ -607,11 +604,11 @@ Test Case - Delete Repo on CardView
 Test Case - Delete Multi Member
     Init Chrome Driver
     ${d}=   Get Current Date    result_format=%m%s
-    Create An New User  ${HARBOR_URL}  testa${d}  testa${d}@vmware.com  test${d}  Test1@34  harbor
+    Create An New User  ${HARBOR_URL}  testa${d}  testa${d}@harbortest.com  test${d}  Test1@34  harbor
     Logout Harbor
-    Create An New User  ${HARBOR_URL}  testb${d}  testb${d}@vmware.com  test${d}  Test1@34  harbor
+    Create An New User  ${HARBOR_URL}  testb${d}  testb${d}@harbortest.com  test${d}  Test1@34  harbor
     Logout Harbor
-    Create An New User  ${HARBOR_URL}  test${d}  test${d}@vmware.com  test${d}  Test1@34  harbor
+    Create An New User  ${HARBOR_URL}  test${d}  test${d}@harbortest.com  test${d}  Test1@34  harbor
     Create An New Project  project${d}
     Go Into Project  project${d}  has_image=${false}
     Switch To Member
@@ -624,7 +621,7 @@ Test Case - Delete Multi Member
 Test Case - Assign Sys Admin
     Init Chrome Driver
     ${d}=    Get Current Date    result_format=%m%s
-    Create An New User  url=${HARBOR_URL}  username=tester${d}  email=tester${d}@vmware.com  realname=harbortest  newPassword=Test1@34  comment=harbortest
+    Create An New User  url=${HARBOR_URL}  username=tester${d}  email=tester${d}@harbortest.com  realname=harbortest  newPassword=Test1@34  comment=harbortest
     Logout Harbor
     Sign In Harbor  ${HARBOR_URL}  ${HARBOR_ADMIN}  ${HARBOR_PASSWORD}
     Switch to User Tag
@@ -653,7 +650,7 @@ Test Case - Admin Push Signed Image
 Test Case - View Scan Results
     Init Chrome Driver
     ${d}=  get current date  result_format=%m%s
-    Create An New Project With New User  url=${HARBOR_URL}  username=tester${d}  email=tester${d}@vmware.com  realname=tester${d}  newPassword=Test1@34  comment=harbor  projectname=project${d}  public=false
+    Create An New Project With New User  url=${HARBOR_URL}  username=tester${d}  email=tester${d}@harbortest.com  realname=tester${d}  newPassword=Test1@34  comment=harbor  projectname=project${d}  public=false
     Push Image  ${ip}  tester${d}  Test1@34  project${d}  tomcat
     Go Into Project  project${d}
     Go Into Repo  project${d}/tomcat
@@ -665,7 +662,7 @@ Test Case - View Scan Results
 Test Case - View Scan Error
     Init Chrome Driver
     ${d}=  get current date  result_format=%m%s
-    Create An New Project With New User  url=${HARBOR_URL}  username=tester${d}  email=tester${d}@vmware.com  realname=tester${d}  newPassword=Test1@34  comment=harbor  projectname=project${d}  public=false
+    Create An New Project With New User  url=${HARBOR_URL}  username=tester${d}  email=tester${d}@harbortest.com  realname=tester${d}  newPassword=Test1@34  comment=harbor  projectname=project${d}  public=false
     Push Image  ${ip}  tester${d}  Test1@34  project${d}  vmware/photon:1.0
     Go Into Project  project${d}
     Go Into Repo  project${d}/vmware/photon

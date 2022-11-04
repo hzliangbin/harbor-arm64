@@ -26,7 +26,7 @@ import (
 	"github.com/goharbor/harbor/src/testing/apitests/apilib"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/astaxie/beego"
+	"github.com/beego/beego"
 	"github.com/goharbor/harbor/src/common"
 	"github.com/goharbor/harbor/src/core/config"
 )
@@ -405,8 +405,8 @@ func buildChangeUserPasswordURL(id int) string {
 
 func TestUsersUpdatePassword(t *testing.T) {
 	fmt.Println("Testing Update User Password")
-	oldPassword := "old_password"
-	newPassword := "new_password"
+	oldPassword := "old_Passw0rd"
+	newPassword := "new_Passw0rd"
 
 	user01 := models.User{
 		Username: "user01_for_testing_change_password",
@@ -540,7 +540,7 @@ func TestUsersUpdatePassword(t *testing.T) {
 				method: http.MethodPut,
 				url:    buildChangeUserPasswordURL(user01.UserID),
 				bodyJSON: &passwordReq{
-					NewPassword: "another_new_password",
+					NewPassword: "another_new_Passw0rd",
 				},
 				credential: admin,
 			},
@@ -666,4 +666,14 @@ func TestUsersCurrentPermissions(t *testing.T) {
 	httpStatusCode, _, err = apiTest.UsersGetPermissions(projDeveloperID, "/project/1", *projAdmin)
 	assert.Nil(err)
 	assert.Equal(int(403), httpStatusCode, "httpStatusCode should be 403")
+}
+
+func TestValidateSecret(t *testing.T) {
+	assert.NotNil(t, validateSecret(""))
+	assert.NotNil(t, validateSecret("12345678"))
+	assert.NotNil(t, validateSecret("passw0rd"))
+	assert.NotNil(t, validateSecret("PASSW0RD"))
+	assert.NotNil(t, validateSecret("Sh0rt"))
+	assert.Nil(t, validateSecret("Passw0rd"))
+	assert.Nil(t, validateSecret("Thisis1Valid_password"))
 }

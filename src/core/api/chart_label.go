@@ -14,7 +14,7 @@ const (
 	idParam      = ":id"
 )
 
-// ChartLabelAPI handles the requests of marking/removing lables to/from charts.
+// ChartLabelAPI handles the requests of marking/removing labels to/from charts.
 type ChartLabelAPI struct {
 	LabelResourceAPI
 	project       *models.Project
@@ -109,5 +109,8 @@ func (cla *ChartLabelAPI) RemoveLabel() {
 
 // GetLabels gets labels for the specified chart version.
 func (cla *ChartLabelAPI) GetLabels() {
+	if !cla.requireAccess(rbac.ActionList) {
+		return
+	}
 	cla.getLabelsOfResource(common.ResourceTypeChart, cla.chartFullName)
 }

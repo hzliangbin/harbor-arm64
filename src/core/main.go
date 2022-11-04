@@ -23,8 +23,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/astaxie/beego"
-	_ "github.com/astaxie/beego/session/redis"
+	"github.com/beego/beego"
+	_ "github.com/beego/beego/session/redis"
 	"github.com/goharbor/harbor/src/common/dao"
 	"github.com/goharbor/harbor/src/common/job"
 	"github.com/goharbor/harbor/src/common/models"
@@ -32,23 +32,26 @@ import (
 	"github.com/goharbor/harbor/src/common/utils"
 	"github.com/goharbor/harbor/src/common/utils/log"
 	"github.com/goharbor/harbor/src/core/api"
-	_ "github.com/goharbor/harbor/src/core/auth/authproxy"
-	_ "github.com/goharbor/harbor/src/core/auth/db"
-	_ "github.com/goharbor/harbor/src/core/auth/ldap"
-	_ "github.com/goharbor/harbor/src/core/auth/uaa"
-
 	quota "github.com/goharbor/harbor/src/core/api/quota"
 	_ "github.com/goharbor/harbor/src/core/api/quota/chart"
 	_ "github.com/goharbor/harbor/src/core/api/quota/registry"
-
+	_ "github.com/goharbor/harbor/src/core/auth/authproxy"
+	_ "github.com/goharbor/harbor/src/core/auth/db"
+	_ "github.com/goharbor/harbor/src/core/auth/ldap"
+	_ "github.com/goharbor/harbor/src/core/auth/oidc"
+	_ "github.com/goharbor/harbor/src/core/auth/uaa"
 	"github.com/goharbor/harbor/src/core/config"
 	"github.com/goharbor/harbor/src/core/filter"
 	"github.com/goharbor/harbor/src/core/middlewares"
 	_ "github.com/goharbor/harbor/src/core/notifier/topic"
 	"github.com/goharbor/harbor/src/core/service/token"
 	"github.com/goharbor/harbor/src/pkg/notification"
+	"github.com/goharbor/harbor/src/pkg/scan"
+	"github.com/goharbor/harbor/src/pkg/scan/dao/scanner"
+	"github.com/goharbor/harbor/src/pkg/scan/event"
 	"github.com/goharbor/harbor/src/pkg/scheduler"
 	"github.com/goharbor/harbor/src/pkg/types"
+	"github.com/goharbor/harbor/src/pkg/version"
 	"github.com/goharbor/harbor/src/replication"
 )
 
@@ -214,6 +217,22 @@ func main() {
 		if err := dao.InitClairDB(clairDB); err != nil {
 			log.Fatalf("failed to initialize clair database: %v", err)
 		}
+
+		reg := &scanner.Registration{
+			Name:            "Clair",
+			Description:     "The clair scanner adapter",
+			URL:             config.ClairAdapterEndpoint(),
+			UseInternalAddr: true,
+			Immutable:       true,
+		}
+
+		if err := scan.EnsureScanner(reg, true); err != nil {
+			log.Fatalf("failed to initialize clair scanner: %v", err)
+		}
+	} else {
+		if err := scan.RemoveImmutableScanners(); err != nil {
+			log.Warningf("failed to remove immutable scanners: %v", err)
+		}
 	}
 
 	closing := make(chan struct{})
@@ -225,6 +244,8 @@ func main() {
 
 	log.Info("initializing notification...")
 	notification.Init()
+	// Initialize the event handlers for handling artifact cascade deletion
+	event.Init()
 
 	filter.Init()
 	beego.InsertFilter("/api/*", beego.BeforeStatic, filter.SessionCheck)
@@ -267,5 +288,7 @@ func main() {
 		log.Infof("Because SYNC_QUOTA set false , no need to sync quota \n")
 	}
 
+	log.Infof("Version: %s, Git commit: %s", version.ReleaseVersion, version.GitCommit)
 	beego.Run()
+
 }
