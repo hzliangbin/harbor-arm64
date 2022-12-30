@@ -13,7 +13,7 @@ require (
 	github.com/agl/ed25519 v0.0.0-20170116200512-5312a6153412 // indirect
 	github.com/aliyun/alibaba-cloud-sdk-go v0.0.0-20190726115642-cd293c93fd97
 	github.com/astaxie/beego v1.9.0
-	github.com/aws/aws-sdk-go v1.19.47
+	github.com/aws/aws-sdk-go v1.33.0
 	github.com/beego/i18n v0.0.0-20140604031826-e87155e8f0c0
 	github.com/bitly/go-hostpool v0.0.0-20171023180738-a3a6125de932 // indirect
 	github.com/bitly/go-simplejson v0.5.0 // indirect
@@ -36,7 +36,7 @@ require (
 	github.com/docker/libtrust v0.0.0-20160708172513-aabc10ec26b7
 	github.com/garyburd/redigo v1.6.0
 	github.com/ghodss/yaml v1.0.0
-	github.com/go-sql-driver/mysql v1.4.1
+	github.com/go-sql-driver/mysql v1.5.0
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/gocraft/work v0.5.1
 	github.com/gofrs/uuid v3.2.0+incompatible // indirect
@@ -60,13 +60,13 @@ require (
 	github.com/opencontainers/go-digest v1.0.0-rc0
 	github.com/opencontainers/image-spec v1.0.1 // indirect
 	github.com/opentracing/opentracing-go v1.1.0 // indirect
-	github.com/pkg/errors v0.8.1
+	github.com/pkg/errors v0.9.1
 	github.com/pquerna/cachecontrol v0.0.0-20180517163645-1555304b9b35 // indirect
 	github.com/prometheus/client_golang v0.9.4 // indirect
 	github.com/robfig/cron v1.0.0
 	github.com/sirupsen/logrus v1.4.1 // indirect
 	github.com/spf13/viper v1.4.0 // indirect
-	github.com/stretchr/testify v1.3.0
+	github.com/stretchr/testify v1.5.1
 	github.com/theupdateframework/notary v0.6.1
 	golang.org/x/crypto v0.0.0-20190325154230-a5d413f7728c
 	golang.org/x/oauth2 v0.0.0-20190226205417-e64efc72b421
